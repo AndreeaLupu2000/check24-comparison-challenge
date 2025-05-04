@@ -1,10 +1,12 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom"
-import HomeView from "./views/HomeView"
+import LoginView from "./views/LoginView"
+import SearchView from "./views/SearchView"
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<HomeView />} />
+        <Route path="/" element={<LoginView />} />
+        <Route path="/search" element={<SearchView />} />
       </Routes>
     </BrowserRouter>
   )

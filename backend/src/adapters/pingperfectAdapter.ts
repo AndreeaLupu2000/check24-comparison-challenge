@@ -39,7 +39,7 @@ export const PingPerfectAdapter: ProviderAdapter = {
         .digest("hex");
 
       const response = await axios.post(
-        `${config.PING_PERFECT_BASE_URL}/offers`, 
+        `${config.PING_PERFECT_BASE_URL}/offers`,
         payload,
         {
           headers: {

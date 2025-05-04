@@ -1,19 +1,22 @@
 body {
-  background-color: #242424;
+  margin: 0;
+  padding: 0;
+  background-color: #f3f4f6; /* Tailwind gray-100 */
   font-family: 'Arial', sans-serif;
-  color: rgba(255, 255, 255, 0.87);
+  color: #1f2937; /* Tailwind gray-800 */
 }
 
 #root {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 0;
   text-align: center;
 }
 
 .logo {
   height: 6em;
   padding: 1.5em;
+  margin: 0;
   will-change: filter;
   transition: filter 300ms;
 }
@@ -45,4 +48,9 @@ body {
 
 .read-the-docs {
   color: #888;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
 }
