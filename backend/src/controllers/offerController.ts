@@ -12,10 +12,10 @@ import { retryWithTimeout } from "./utils/retry";
 
 const providers = [
   ByteMeAdapter,
-  WebWunderAdapter,
+  ServusSpeedAdapter,
   PingPerfectAdapter,
-  VerbynDichAdapter,
-  ServusSpeedAdapter
+  WebWunderAdapter,
+  VerbynDichAdapter
 ];
 
 

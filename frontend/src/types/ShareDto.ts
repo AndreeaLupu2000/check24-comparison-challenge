@@ -8,3 +8,5 @@ export interface ShareDto {
     offers: OfferDto[];
     createdAt: Date;
 }
+
+export type CreateShareDto = Omit<ShareDto, 'id' | 'createdAt'>;

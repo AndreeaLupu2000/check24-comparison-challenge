@@ -38,9 +38,10 @@ export const VerbynDichAdapter: ProviderAdapter = {
         }
 
         // Extract values from description using a basic regex
-        const speedMatch = data.description.match(/(\d+)\s*Mbps/i);
+        const speedMatch = data.description.match(/(\d+)\s* Mbit/i);
         const priceMatch = data.description.match(/(\d+)[,.]?(\d{0,2})\s*€/);
         const durationMatch = data.description.match(/(\d+)\s*months?/i);
+        const connectionTypeMatch = data.description.match(/\s*([A-Za-z]+)-Verbindung/);
 
         offers.push({
           provider: "VerbynDich",
@@ -51,7 +52,7 @@ export const VerbynDichAdapter: ProviderAdapter = {
             ? parseFloat(`${priceMatch[1]}.${priceMatch[2] || "00"}`)
             : 0,
           durationMonths: durationMatch ? parseInt(durationMatch[1]) : 24,
-          connectionType: /fiber|dsl/i.test(data.description) ? RegExp.lastMatch.toUpperCase() : "UNKNOWN",
+          connectionType: connectionTypeMatch ? connectionTypeMatch[1].toUpperCase() : "UNKNOWN",
           extras: [data.description]
         });
 

@@ -1,13 +1,13 @@
 import { Router, Request, Response } from "express";
-import { createShareOffer, getShareOffer, updateShareOffer, deleteShareOffer, getAllShareOffers } from "../controllers/shareController";
+import { createSharedOffer, getSharedOffer, updateSharedOffer, deleteSharedOffer, getAllSharedOffers } from "../controllers/shareController";
 
 const router = Router();
 
-router.post("/shareOffer", createShareOffer);
-router.get("/shareOffer/:id", getShareOffer);
-router.put("/shareOffer/:id", updateShareOffer);
-router.delete("/shareOffer/:id", deleteShareOffer);
-router.get("/shareOffer", getAllShareOffers);
+router.post("/share", createSharedOffer);
+router.get("/share/:id", getSharedOffer);
+router.put("/share/:id", updateSharedOffer);
+router.delete("/share/:id", deleteSharedOffer);
+router.get("/share", getAllSharedOffers);
 
 export default router;
 

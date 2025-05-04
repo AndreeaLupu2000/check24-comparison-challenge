@@ -1,15 +1,20 @@
 // src/views/SearchView.tsx
 import { useState, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { OfferDto } from "../types/OfferDto";
 import { useAddress } from "../context/AddressContext";
 import { streamOffers } from "../api/offerService";
 import OfferCard from "../components/OfferCard";
 import Icon from "../assets/icon.png";
+import { createSharedOffer, getAllSharedOffers } from "../api/shareService";
+import { getAllUsers } from "../api/userService";
+import { useAuth } from "../context/AuthContext";
 
 const SearchView = () => {
   const { address, setAddress } = useAddress();
   const [offers, setOffers] = useState<OfferDto[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false); // tracking if offers are still being streamed
   const [sortBy, setSortBy] = useState<
     | "price low to high"
     | "price high to low"
@@ -17,12 +22,29 @@ const SearchView = () => {
     | "speed low to high"
     | undefined
   >(undefined);
+  const [shareId, setShareId] = useState<string | null>(null);
+  const { email } = useAuth();
+
+  const offersArray: OfferDto[] = [];
+
+  const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    console.log("Address: ", address);
-  }, [address]);
+    const params = new URLSearchParams(location.search);
+    const street = params.get("street") || "";
+    const houseNumber = params.get("houseNumber") || "";
+    const city = params.get("city") || "";
+    const plz = params.get("plz") || "";
 
-  /*const onSearch = async () => {
+    if (street && houseNumber && city && plz) {
+      setAddress({ street, houseNumber, city, plz, countryCode: "DE" });
+      onSearch(); // auto-search for shared links
+    }
+  }, []);
+
+
+  const onSearch = () => {
     if (
       !address.street ||
       !address.houseNumber ||
@@ -33,37 +55,73 @@ const SearchView = () => {
       return;
     }
 
-    setLoading(true);
-
-    try {
-      //const offers = await getOffers(address);
-      setOffers([]);
-      console.log("Offers: ", offers);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };*/
-
-  const onSearch = () => {
-    if (!address.street || !address.houseNumber || !address.city || !address.plz) {
-      alert("Please fill in all address fields");
-      return;
-    }
-  
     setOffers([]);
     setLoading(true);
-  
+    setIsStreaming(true);
     streamOffers(
       address,
-      (offer) => setOffers((prev) => [...prev, offer]), // onOffer
-      () => setLoading(false),                         // onComplete
-      () => setLoading(false)                          // onError
+      (offer) => {
+        setOffers((prev) => {
+          const updatedOffers = [...prev, offer];
+          offersArray.push(offer);
+          return updatedOffers;
+        });
+        setLoading(false);
+      },
+      async () => {
+        setLoading(false);
+        setIsStreaming(false);
+
+        const getUserId = async () => {
+          const users = await getAllUsers();
+          if (users.length > 0) {
+            for (const user of users) {
+              if (user.email === email) {
+                return user.id.toString();
+              }
+            }
+          }
+          return "";
+        };
+
+        const userId = await getUserId();
+
+        // Get the final offers array directly from the state using a ref
+        createSharedOffer({
+          userId: userId,
+          address,
+          offers: offersArray
+        })
+          .then((share) => {
+            setShareId(share.id);
+            const shareUrl = `${window.location.origin}/share/${share.id}`;
+            console.log(shareUrl);
+          })
+          .catch((err) => {
+            console.error("Failed to create share link", err);
+          });
+
+      },
+      () => {
+        setLoading(false);
+        setIsStreaming(false);
+      }
+    );
+
+    console.log("Offers", offers);
+    console.log("OffersArray", offersArray);
+    console.log("SharedItem", getAllSharedOffers());
+
+    navigate(
+      `/search?street=${encodeURIComponent(
+        address.street
+      )}&houseNumber=${encodeURIComponent(
+        address.houseNumber
+      )}&city=${encodeURIComponent(address.city)}&plz=${encodeURIComponent(
+        address.plz
+      )}`
     );
   };
-  
-  
 
   // Sort offers
   const sortedOffers = sortBy
@@ -79,6 +137,16 @@ const SearchView = () => {
         }
       })
     : offers;
+
+  const shareUrl = shareId
+    ? `${window.location.origin}/share/${shareId}`
+    : `${window.location.origin}/search?street=${encodeURIComponent(
+        address.street
+      )}&houseNumber=${encodeURIComponent(
+        address.houseNumber
+      )}&city=${encodeURIComponent(address.city)}&plz=${encodeURIComponent(
+        address.plz
+      )}`;
 
   return (
     <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 ">
@@ -192,6 +260,21 @@ const SearchView = () => {
               Search
             </button>
           </div>
+          <div className="flex justify-end mt-4">
+            <button
+              onClick={() =>
+                window.open(
+                  `https://wa.me/?text=${encodeURIComponent(
+                    `Check out these offers: ${shareUrl}`
+                  )}`,
+                  "_blank"
+                )
+              }
+              className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600"
+            >
+              Share on WhatsApp
+            </button>
+          </div>
         </div>
       </div>
 
@@ -226,20 +309,32 @@ const SearchView = () => {
         </select>
       </div>
 
-      {/* Offers Display */}
-      {loading ? (
+      {/* Modified Offers Display */}
+      {loading && offers.length === 0 ? (
         <div className="flex justify-center items-center min-h-[30vh]">
           <div className="h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
       ) : sortedOffers.length > 0 ? (
-        <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 ">
+        <div className="space-y-4">
           {sortedOffers.map((offer, index) => (
             <OfferCard key={index} offer={offer} onView={() => {}} />
           ))}
+
+          {/* Show loading indicator at bottom while streaming */}
+          {isStreaming && (
+            <div className="flex justify-center items-center py-4">
+              <div className="h-6 w-6 border-3 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              <span className="ml-2 text-gray-600">
+                Loading more results...
+              </span>
+            </div>
+          )}
         </div>
       ) : (
         <div className="text-center text-gray-500 mt-6">
-          No offers available for this address.
+          {isStreaming
+            ? "Searching for offers..."
+            : "No offers available for this address."}
         </div>
       )}
     </div>

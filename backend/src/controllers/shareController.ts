@@ -8,7 +8,7 @@ import { prisma } from '../db/client';
  * @param res 
  * @returns 
  */
-export const createShareOffer = async (req: Request, res: Response) => {
+export const createSharedOffer = async (req: Request, res: Response) => {
     const { userId, address, offers } = req.body;
 
     try {
@@ -17,13 +17,14 @@ export const createShareOffer = async (req: Request, res: Response) => {
                 userId,
                 address,
                 offers,
+                createdAt: new Date(),
             }
         })
 
         res.status(201).json(share);
 
     } catch (error) {
-        console.error("[shareOffer]", error);
+        console.error("[createSharedOffer]", error);
         res.status(500).json({ error: "Internal server error" });
     }
 }
@@ -34,7 +35,7 @@ export const createShareOffer = async (req: Request, res: Response) => {
  * @param res 
  * @returns 
  */
-export const getShareOffer = async (req: Request, res: Response) => {
+export const getSharedOffer = async (req: Request, res: Response) => {
     const { id } = req.params;
 
     try {
@@ -43,7 +44,7 @@ export const getShareOffer = async (req: Request, res: Response) => {
         res.status(200).json(share);
 
     } catch (error) {
-        console.error("[getShareOffer]", error);
+        console.error("[getSharedOffer]", error);
         res.status(500).json({ error: "Internal server error" });
     }
 }
@@ -54,7 +55,7 @@ export const getShareOffer = async (req: Request, res: Response) => {
  * @param res 
  * @returns 
  */
-export const updateShareOffer = async (req: Request, res: Response) => {
+export const updateSharedOffer = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { userId, address, offers } = req.body;
 
@@ -64,7 +65,7 @@ export const updateShareOffer = async (req: Request, res: Response) => {
         res.status(200).json(share);
 
     } catch (error) {
-        console.error("[updateShareOffer]", error);
+        console.error("[updateSharedOffer]", error);
         res.status(500).json({ error: "Internal server error" });
     }
 }
@@ -75,7 +76,7 @@ export const updateShareOffer = async (req: Request, res: Response) => {
  * @param res 
  * @returns 
  */
-export const deleteShareOffer = async (req: Request, res: Response) => {
+export const deleteSharedOffer = async (req: Request, res: Response) => {
     const { id } = req.params;
 
     try {
@@ -84,7 +85,7 @@ export const deleteShareOffer = async (req: Request, res: Response) => {
         res.status(200).json(share);
 
     } catch (error) {
-        console.error("[deleteShareOffer]", error);
+        console.error("[deleteSharedOffer]", error);
         res.status(500).json({ error: "Internal server error" });
     }
 }
@@ -95,14 +96,14 @@ export const deleteShareOffer = async (req: Request, res: Response) => {
  * @param res 
  * @returns 
  */
-export const getAllShareOffers = async (req: Request, res: Response) => {
+export const getAllSharedOffers = async (req: Request, res: Response) => {
     try {
         const shares = await prisma.share.findMany();
 
         res.status(200).json(shares);
 
     } catch (error) {
-        console.error("[getAllShareOffers]", error);
+        console.error("[getAllSharedOffers]", error);
         res.status(500).json({ error: "Internal server error" });
     }
 }
