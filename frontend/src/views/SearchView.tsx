@@ -1,5 +1,5 @@
 // src/views/SearchView.tsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { OfferDto } from "../types/OfferDto";
 import { useAddress } from "../context/AddressContext";
@@ -9,6 +9,7 @@ import Icon from "../assets/icon.png";
 import { createSharedOffer, getAllSharedOffers } from "../api/shareService";
 import { getAllUsers } from "../api/userService";
 import { useAuth } from "../context/AuthContext";
+import { Autocomplete } from "@react-google-maps/api";
 
 const SearchView = () => {
   const { address, setAddress } = useAddress();
@@ -23,6 +24,12 @@ const SearchView = () => {
     | undefined
   >(undefined);
   const [shareId, setShareId] = useState<string | null>(null);
+  const plzRef = useRef<HTMLInputElement>(null);
+  const streetRef = useRef<HTMLInputElement>(null);
+  const [plzAutocomplete, setPlzAutocomplete] =
+    useState<google.maps.places.Autocomplete | null>(null);
+  const [streetAutocomplete, setStreetAutocomplete] =
+    useState<google.maps.places.Autocomplete | null>(null);
   const { email } = useAuth();
 
   const offersArray: OfferDto[] = [];
@@ -42,7 +49,6 @@ const SearchView = () => {
       onSearch(); // auto-search for shared links
     }
   }, []);
-
 
   const onSearch = () => {
     if (
@@ -90,7 +96,7 @@ const SearchView = () => {
         createSharedOffer({
           userId: userId,
           address,
-          offers: offersArray
+          offers: offersArray,
         })
           .then((share) => {
             setShareId(share.id);
@@ -100,7 +106,6 @@ const SearchView = () => {
           .catch((err) => {
             console.error("Failed to create share link", err);
           });
-
       },
       () => {
         setLoading(false);
@@ -148,6 +153,44 @@ const SearchView = () => {
         address.plz
       )}`;
 
+  const onPlzLoad = (autocomplete: google.maps.places.Autocomplete) =>
+    setPlzAutocomplete(autocomplete);
+
+  const onStreetLoad = (autocomplete: google.maps.places.Autocomplete) =>
+    setStreetAutocomplete(autocomplete);
+
+  const onPlzPlaceChanged = () => {
+    if (plzAutocomplete !== null) {
+      const place = plzAutocomplete.getPlace();
+      const postalCode =
+        place.address_components?.find((c) => c.types.includes("postal_code"))
+          ?.long_name || "";
+      const cityName =
+        place.address_components?.find((c) => c.types.includes("locality"))
+          ?.long_name || "";
+      setAddress({
+        ...address,
+        plz: postalCode,
+        city: cityName,
+        countryCode: "DE",
+      });
+    }
+  };
+
+  const onStreetPlaceChanged = () => {
+    if (streetAutocomplete !== null) {
+      const place = streetAutocomplete.getPlace();
+      const streetName =
+        place.address_components?.find((c) => c.types.includes("route"))
+          ?.long_name || "";
+      setAddress({
+        ...address,
+        street: streetName,
+        countryCode: "DE",
+      });
+    }
+  };
+
   return (
     <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 ">
       <div className="w-full py-6 mb-8 mt-10">
@@ -170,44 +213,34 @@ const SearchView = () => {
         <div className="flex gap-4 items-end">
           {/* Input Boxes (2x2 grid) */}
           <div className="grid grid-cols-2 gap-4 flex-1">
-            {/* Street */}
+            {/* PLZ */}
             <div className="flex flex-col">
               <label
-                htmlFor="street"
+                htmlFor="plz"
                 className="text-sm font-medium text-gray-700 mb-1"
               >
-                Street
+                PLZ
               </label>
-              <input
-                id="street"
-                type="text"
-                value={address.street}
-                onChange={(e) =>
-                  setAddress({ ...address, street: e.target.value })
-                }
-                placeholder="Musterstraße"
-                className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
-
-            {/* House Number */}
-            <div className="flex flex-col">
-              <label
-                htmlFor="houseNumber"
-                className="text-sm font-medium text-gray-700 mb-1"
+              <Autocomplete
+                onLoad={onPlzLoad}
+                onPlaceChanged={onPlzPlaceChanged}
+                options={{
+                  types: ["(regions)"],
+                  componentRestrictions: { country: "de" },
+                }}
               >
-                House Number
-              </label>
-              <input
-                id="houseNumber"
-                type="text"
-                value={address.houseNumber}
-                onChange={(e) =>
-                  setAddress({ ...address, houseNumber: e.target.value })
-                }
-                placeholder="123"
-                className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              />
+                <input
+                  ref={plzRef}
+                  id="plz"
+                  type="text"
+                  value={address.plz}
+                  onChange={(e) =>
+                    setAddress({ ...address, plz: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border rounded-md shadow-sm"
+                  placeholder="12345"
+                />
+              </Autocomplete>
             </div>
 
             {/* City */}
@@ -230,22 +263,52 @@ const SearchView = () => {
               />
             </div>
 
-            {/* PLZ */}
+            {/* Street */}
             <div className="flex flex-col">
               <label
-                htmlFor="plz"
+                htmlFor="street"
                 className="text-sm font-medium text-gray-700 mb-1"
               >
-                PLZ
+                Street
+              </label>
+              <Autocomplete
+              onLoad={onStreetLoad}
+              onPlaceChanged={onStreetPlaceChanged}
+              options={{
+                types: ["address"],
+                componentRestrictions: { country: "de" },
+              }}
+            >
+              <input
+                ref={streetRef}
+                id="street"
+                type="text"
+                value={address.street}
+                onChange={(e) =>
+                  setAddress({ ...address, street: e.target.value })
+                }
+                className="w-full px-3 py-2 border rounded-md shadow-sm"
+                placeholder="Musterstraße"
+              />
+            </Autocomplete>
+            </div>
+
+            {/* House Number */}
+            <div className="flex flex-col">
+              <label
+                htmlFor="houseNumber"
+                className="text-sm font-medium text-gray-700 mb-1"
+              >
+                House Number
               </label>
               <input
-                id="plz"
+                id="houseNumber"
                 type="text"
-                value={address.plz}
+                value={address.houseNumber}
                 onChange={(e) =>
-                  setAddress({ ...address, plz: e.target.value })
+                  setAddress({ ...address, houseNumber: e.target.value })
                 }
-                placeholder="12345"
+                placeholder="123"
                 className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
               />
             </div>
@@ -272,7 +335,7 @@ const SearchView = () => {
               }
               className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600"
             >
-              Share on WhatsApp
+              Share
             </button>
           </div>
         </div>
