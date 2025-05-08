@@ -1,16 +1,15 @@
 // src/views/SearchView.tsx
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { OfferDto } from "../types/OfferDto";
 import { useAddress } from "../context/AddressContext";
 import { streamOffers } from "../api/offerService";
 import OfferCard from "../components/OfferCard";
 import Icon from "../assets/icon.png";
-import { createSharedOffer, getAllSharedOffers } from "../api/shareService";
+import { createSharedOffer } from "../api/shareService";
 import { getAllUsers } from "../api/userService";
 import { useAuth } from "../context/AuthContext";
-import { Autocomplete } from "@react-google-maps/api";
-import { AddressDto } from "../types/AddressDto";
+import AddressComponent from "../components/AddressComponent";
 
 /**
  * SearchView Component
@@ -37,25 +36,6 @@ const SearchView = () => {
   // Share Management
   const [shareId, setShareId] = useState<string | null>(null);
 
-  // Input References
-  const plzRef = useRef<HTMLInputElement>(null);
-  const streetRef = useRef<HTMLInputElement>(null);
-
-  // Google Places Autocomplete Integration
-  const [plzAutocomplete, setPlzAutocomplete] =
-    useState<google.maps.places.Autocomplete | null>(null);
-  const [streetAutocomplete, setStreetAutocomplete] =
-    useState<google.maps.places.Autocomplete | null>(null);
-
-  // Address History and Suggestions Management
-  const [addressSuggestions, setAddressSuggestions] = useState<AddressDto[]>(
-    []
-  );
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
-  const [showPlzSuggestions, setShowPlzSuggestions] = useState(false);
-
-
   // Authentication Context
   const { email } = useAuth();
 
@@ -64,25 +44,7 @@ const SearchView = () => {
 
   // Router Utilities
   const location = useLocation();
-  const navigate = useNavigate();
-
-  /**
-   * Initialize address history from localStorage
-   * Handles potential corrupted data and resets if necessary
-   */
-  useEffect(() => {
-    const history = localStorage.getItem("addressHistory");
-    if (history) {
-      try {
-        const parsedHistory = JSON.parse(history);
-        setAddressSuggestions(parsedHistory);
-      } catch (e) {
-        console.error("Failed to parse address history:", e);
-        localStorage.setItem("addressHistory", "[]");
-        setAddressSuggestions([]);
-      }
-    }
-  }, []);
+  const navigate = useNavigate();  
 
   /**
    * Handle initial address loading and auto-search
@@ -117,37 +79,8 @@ const SearchView = () => {
   }, []);
 
   /**
-   * Updates address history in localStorage and state
-   * Maintains a maximum of 5 unique addresses
-   */
-  const updateAddressHistory = (newAddress: AddressDto) => {
-    const history = JSON.parse(localStorage.getItem("addressHistory") || "[]");
-    const exists = history.some(
-      (a: AddressDto) =>
-        a.street === newAddress.street &&
-        a.houseNumber === newAddress.houseNumber &&
-        a.plz === newAddress.plz &&
-        a.city === newAddress.city
-    );
-
-    if (!exists) {
-      const updated = [newAddress, ...history].slice(0, 5);
-      localStorage.setItem("addressHistory", JSON.stringify(updated));
-      setAddressSuggestions(updated);
-    }
-  };
-
-
-  /**
    * Main search handler
-   * Validates address, updates history, and initiates offer streaming
-   *
-   * Process:
-   * 1. Validate input completeness
-   * 2. Validate address with Google API
-   * 3. Save to history if valid
-   * 4. Stream offers
-   * 5. Handle share creation
+   * Validates address and initiates offer streaming
    */
   const onSearch = async () => {
     // Input validation
@@ -161,10 +94,8 @@ const SearchView = () => {
       return;
     }
 
-
-    // Save valid address to localStorage and history
+    // Save valid address to localStorage
     localStorage.setItem("address", JSON.stringify(address));
-    updateAddressHistory(address);
 
     // Initialize search
     setOffers([]);
@@ -182,7 +113,6 @@ const SearchView = () => {
 
   /**
    * Handle incoming offers during streaming
-   * @param offer - New offer received from stream
    */
   const handleNewOffer = (offer: OfferDto) => {
     setOffers((prev) => {
@@ -195,7 +125,6 @@ const SearchView = () => {
 
   /**
    * Handle stream completion
-   * Creates share link and updates states
    */
   const handleStreamComplete = async () => {
     setLoading(false);
@@ -215,7 +144,6 @@ const SearchView = () => {
 
     const userId = await getUserId();
 
-    // Get the final offers array directly from the state using a ref
     createSharedOffer({
       userId: userId,
       address,
@@ -229,10 +157,6 @@ const SearchView = () => {
       .catch((err) => {
         console.error("Failed to create share link", err);
       });
-
-    console.log("Offers", offers);
-    console.log("OffersArray", offersArray);
-    console.log("SharedItem", getAllSharedOffers());
 
     navigate(
       `/search?street=${encodeURIComponent(
@@ -279,66 +203,8 @@ const SearchView = () => {
         address.plz
       )}`;
 
-  const onPlzLoad = (autocomplete: google.maps.places.Autocomplete) =>{
-    setPlzAutocomplete(autocomplete);
-    autocomplete.setOptions(
-      {
-        componentRestrictions: { country: "de" },
-        fields: ["address_components", "formatted_address"],
-      }
-    )
-  };
-
-  const onStreetLoad = (autocomplete: google.maps.places.Autocomplete) =>{
-    setStreetAutocomplete(autocomplete);
-    autocomplete.setOptions(
-      {
-        componentRestrictions: { country: "de" },
-        fields: ["address_components", "formatted_address"],
-      }
-    )
-  };
-
-  const onPlzPlaceChanged = () => {
-    if (plzAutocomplete !== null) {
-      const place = plzAutocomplete.getPlace();
-
-      const postalCode =
-        place.address_components?.find((c) => c.types.includes("postal_code"))
-          ?.long_name || "";
-
-      const cityName =
-        place.address_components?.find((c) => c.types.includes("locality"))
-          ?.long_name || "";
-
-      setAddress({
-        ...address,
-        plz: postalCode,
-        city: cityName,
-        countryCode: "DE",
-      });
-    }
-  };
-
-  const onStreetPlaceChanged = () => {
-    if (streetAutocomplete !== null) {
-
-      const place = streetAutocomplete.getPlace();
-
-      const streetName =
-        place.address_components?.find((c) => c.types.includes("route"))
-          ?.long_name || "";
-          
-      setAddress({
-        ...address,
-        street: streetName,
-        countryCode: "DE",
-      });
-    }
-  };
-
   return (
-    <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 ">
+    <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="w-full py-6 mb-8 mt-10">
         <div className="flex justify-center items-center gap-6 max-w-6xl mx-auto px-4">
           {/* Logo */}
@@ -355,237 +221,31 @@ const SearchView = () => {
         <h1 className="text-2xl font-bold mb-6 text-center">
           Search Internet Providers
         </h1>
-        {/* Input + Button Row */}
-        <div className="flex gap-4 items-end">
+        
+        {/* Address Component */}
+        <AddressComponent/>
 
-          {/* Input Boxes (2x2 grid) */}
-          <div className="grid grid-cols-2 gap-4 flex-1">
-            
-            {/* PLZ */}
-            <div className="flex flex-col">
-              <label
-                htmlFor="plz"
-                className="text-sm font-medium text-gray-700 mb-1"
-              >
-                PLZ
-              </label>
-              <div className="relative">
-                <Autocomplete
-                  onLoad={onPlzLoad}
-                  onPlaceChanged={onPlzPlaceChanged}
-                  options={{
-                    types: ["(regions)"],
-                    componentRestrictions: { country: "de" },
-                  }}
-                >
-                  <input
-                    ref={plzRef}
-                    id="plz"
-                    type="text"
-                    value={address.plz}
-                    onChange={(e) => {
-                      setAddress({ ...address, plz: e.target.value });
-                    }}
-                    onFocus={() => setShowPlzSuggestions(true)}
-                    onBlur={() =>
-                      setTimeout(() => setShowPlzSuggestions(false), 200)
-                    }
-                    onKeyDown={(e) => {
-                      if (e.key === "ArrowDown") {
-                        e.preventDefault();
-                        setActiveSuggestionIndex((prev) =>
-                          prev < addressSuggestions.length - 1 ? prev + 1 : prev
-                        );
-                      } else if (e.key === "ArrowUp") {
-                        e.preventDefault();
-                        setActiveSuggestionIndex((prev) =>
-                          prev > 0 ? prev - 1 : -1
-                        );
-                      } else if (
-                        e.key === "Enter" &&
-                        activeSuggestionIndex >= 0
-                      ) {
-                        e.preventDefault();
-                        setAddress(addressSuggestions[activeSuggestionIndex]);
-                        setShowPlzSuggestions(false);
-                      }
-                    }}
-                    className="w-full px-3 py-2 border rounded-md shadow-sm"
-                    placeholder="12345"
-                  />
-                </Autocomplete>
-
-                {showPlzSuggestions && addressSuggestions.length > 0 && (
-                  <div className="absolute z-10 bg-white border border-gray-300 rounded-md shadow-lg mt-1 w-full max-h-60 overflow-auto">
-                    {addressSuggestions.map((suggestion, index) => (
-                      <div
-                        key={index}
-                        className={`px-4 py-2 cursor-pointer text-sm ${
-                          index === activeSuggestionIndex
-                            ? "bg-blue-100"
-                            : "hover:bg-gray-100"
-                        }`}
-                        onMouseDown={() => {
-                          setAddress(suggestion);
-                          setShowPlzSuggestions(false);
-                        }}
-                        onMouseEnter={() => setActiveSuggestionIndex(index)}
-                      >
-                        {`${suggestion.plz} ${suggestion.city}`}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* City */}
-            <div className="flex flex-col">
-              <label
-                htmlFor="city"
-                className="text-sm font-medium text-gray-700 mb-1"
-              >
-                City
-              </label>
-              <input
-                id="city"
-                type="text"
-                value={address.city}
-                onChange={(e) => {
-                  setAddress({ ...address, city: e.target.value });
-                }}
-                onFocus={() => setShowPlzSuggestions(true)}
-                onBlur={() =>
-                  setTimeout(() => setShowPlzSuggestions(false), 200)
-                }
-                placeholder="Musterstadt"
-                className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
-
-            {/* Street */}
-            <div className="flex flex-col">
-              <label
-                htmlFor="street"
-                className="text-sm font-medium text-gray-700 mb-1"
-              >
-                Street
-              </label>
-              <div className="relative">
-                <Autocomplete
-                  onLoad={onStreetLoad}
-                  onPlaceChanged={onStreetPlaceChanged}
-                  options={{
-                    types: ["address"],
-                    componentRestrictions: { country: "de" },
-                  }}
-                >
-                  <input
-                    ref={streetRef}
-                    id="street"
-                    type="text"
-                    value={address.street}
-                    onChange={(e) => {
-                      setAddress({ ...address, street: e.target.value });
-                    }}
-                    onFocus={() => setShowSuggestions(true)}
-                    onBlur={() =>
-                      setTimeout(() => setShowSuggestions(false), 200)
-                    }
-                    onKeyDown={(e) => {
-                      if (e.key === "ArrowDown") {
-                        e.preventDefault();
-                        setActiveSuggestionIndex((prev) =>
-                          prev < addressSuggestions.length - 1 ? prev + 1 : prev
-                        );
-                      } else if (e.key === "ArrowUp") {
-                        e.preventDefault();
-                        setActiveSuggestionIndex((prev) =>
-                          prev > 0 ? prev - 1 : -1
-                        );
-                      } else if (
-                        e.key === "Enter" &&
-                        activeSuggestionIndex >= 0
-                      ) {
-                        e.preventDefault();
-                        setAddress(addressSuggestions[activeSuggestionIndex]);
-                        setShowSuggestions(false);
-                      }
-                    }}
-                    className="w-full px-3 py-2 border rounded-md shadow-sm"
-                    placeholder="Musterstraße"
-                  />
-                </Autocomplete>
-
-                {showSuggestions && addressSuggestions.length > 0 && (
-                  <div className="absolute z-10 bg-white border border-gray-300 rounded-md shadow-lg mt-1 w-full max-h-60 overflow-auto">
-                    {addressSuggestions.map((suggestion, index) => (
-                      <div
-                        key={index}
-                        className={`px-4 py-2 cursor-pointer text-sm ${
-                          index === activeSuggestionIndex
-                            ? "bg-blue-100"
-                            : "hover:bg-gray-100"
-                        }`}
-                        onMouseDown={() => {
-                          setAddress(suggestion);
-                          setShowSuggestions(false);
-                        }}
-                        onMouseEnter={() => setActiveSuggestionIndex(index)}
-                      >
-                        {`${suggestion.street} ${suggestion.houseNumber}, ${suggestion.plz} ${suggestion.city}`}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* House Number */}
-            <div className="flex flex-col">
-              <label
-                htmlFor="houseNumber"
-                className="text-sm font-medium text-gray-700 mb-1"
-              >
-                House Number
-              </label>
-              <input
-                id="houseNumber"
-                type="text"
-                value={address.houseNumber}
-                onChange={(e) =>
-                  setAddress({ ...address, houseNumber: e.target.value })
-                }
-                placeholder="123"
-                className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
-          </div>
-
-          {/* Search Button */}
-          <div className="flex-shrink-0 self-end">
-            <button
-              onClick={onSearch}
-              className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
-            >
-              Search
-            </button>
-          </div>
-          <div className="flex justify-end mt-4">
-            <button
-              onClick={() =>
-                window.open(
-                  `https://wa.me/?text=${encodeURIComponent(
-                    `Check out these offers: ${shareUrl}`
-                  )}`,
-                  "_blank"
-                )
-              }
-              className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600"
-            >
-              Share
-            </button>
-          </div>
+        {/* Search and Share Buttons - Updated styling */}
+        <div className="flex justify-center gap-4 mt-2">
+          <button
+            onClick={onSearch}
+            className="w-full max-w-[200px] bg-blue-500 text-white px-6 py-3 rounded-md hover:bg-blue-600 text-lg font-medium transition-colors duration-200"
+          >
+            Search
+          </button>
+          <button
+            onClick={() =>
+              window.open(
+                `https://wa.me/?text=${encodeURIComponent(
+                  `Check out these offers: ${shareUrl}`
+                )}`,
+                "_blank"
+              )
+            }
+            className="w-full max-w-[200px] bg-green-500 text-white px-6 py-3 rounded-md hover:bg-green-600 text-lg font-medium transition-colors duration-200"
+          >
+            Share
+          </button>
         </div>
       </div>
 
@@ -620,7 +280,7 @@ const SearchView = () => {
         </select>
       </div>
 
-      {/* Modified Offers Display */}
+      {/* Offers Display */}
       {loading && offers.length === 0 ? (
         <div className="flex justify-center items-center min-h-[30vh]">
           <div className="h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>

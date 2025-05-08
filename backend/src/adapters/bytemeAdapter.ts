@@ -59,7 +59,7 @@ export const ByteMeAdapter: ProviderAdapter = {
 
       // Map the ByteMe raw offer to the Offer interface provided by the app
       const offers = parsed.data.map(row => ({
-        provider: row.providerName.trim(),
+        provider: "ByteMe",
         productId: row.productId,
         title: `${row.providerName.trim()} ${row.speed} Internet`,
         speedMbps: parseInt(row.speed) || 0,

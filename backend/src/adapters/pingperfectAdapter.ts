@@ -53,7 +53,7 @@ export const PingPerfectAdapter: ProviderAdapter = {
 
         // Normalize the offers to the common offer model
         const normalized: Offer[] = offers.map((o: any) => ({
-          provider: o.providerName ?? "Ping Perfect",
+          provider: "Ping Perfect",
           productId: "", // not provided
           title: o.providerName ?? "Internet Offer",
           speedMbps: o.productInfo?.speed ?? 0,
