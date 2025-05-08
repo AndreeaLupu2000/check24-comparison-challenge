@@ -11,11 +11,11 @@ import { NonRetryableError } from './errors';
 export async function retryWithTimeout<T>(
   fn: () => Promise<T>,
   retries = 3,
-  timeoutMs = 30000 // 30 seconds
+  timeoutMs = 30000 // 50 seconds
 ): Promise<T> {
   let lastError;
 
-  for (let attempt = 0; attempt <= retries; attempt++) {
+  for (let attempt = 0; attempt <= 3; attempt++) {
     console.log(`[retryWithTimeout] Attempt ${attempt + 1} of ${retries}`);
     try {
       return await Promise.race([

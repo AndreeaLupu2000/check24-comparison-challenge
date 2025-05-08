@@ -1,5 +1,3 @@
-//src/adapters/pingperfectAdapter.ts
-
 import { ProviderAdapter } from "./providerAdapter";
 import { AddressInput } from "../models/AddressModel";
 import { Offer } from "../models/OfferModel";
@@ -8,67 +6,74 @@ import axios from "axios";
 import crypto from "crypto";
 
 export const PingPerfectAdapter: ProviderAdapter = {
-  /**
-   * Get offers from Ping Perfect
-   * @param address 
-   * @returns 
-   */
   async getOffers(address: AddressInput): Promise<Offer[]> {
     const { street, houseNumber, city, plz } = address;
 
-    const payload = {
-      address: {
-        street,
-        houseNumber,
+    const allOffers: Offer[] = [];
+
+    // Create the request body for both fiber and non-fiber offers
+    for (const wantsFiber of [true, false]) {
+      const sortedPayload = {
         city,
-        postalCode: plz,
-        countryCode: config.DEFAULT_COUNTRY
-      }
-    };
+        houseNumber,
+        plz,
+        street,
+        wantsFiber,
+      };
 
-    try {
-      // Step 1: Prepare timestamp and body
-      const timestamp = Math.floor(Date.now() / 1000).toString();
-      const bodyString = JSON.stringify(payload);
-      const dataToSign = `${timestamp}:${bodyString}`;
+      // Sort the payload keys to respect to API requirements
+      const sortedKeys = ["city", "houseNumber", "plz", "street", "wantsFiber"];
+      const requestBody = JSON.stringify(sortedPayload, sortedKeys);
 
-      // Step 2: Generate signature
+      // Create the timestamp and signature
+      const timestamp = Math.floor(Date.now() / 1000);
+      const message = `${timestamp}:${requestBody}`;
+
       const signature = crypto
         .createHmac("sha256", config.PING_PERFECT_SECRET)
-        .update(dataToSign)
+        .update(message)
         .digest("hex");
 
-      const response = await axios.post(
-        `${config.PING_PERFECT_BASE_URL}/offers`,
-        payload,
-        {
-          headers: {
-            "X-Signature": signature,
-            "X-Timestamp": timestamp,
-            "X-Client-Id": config.PING_PERFECT_CLIENT_ID,
-            "Content-Type": "application/json"
-          },
-          timeout: config.API_TIMEOUT_MS
-        }
-      );
+      try {
+        // Send the request to the API
+        const response = await axios.post(
+          "https://pingperfect.gendev7.check24.fun/internet/angebote/data",
+          requestBody,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "X-Client-Id": config.PING_PERFECT_CLIENT_ID,
+              "X-Timestamp": timestamp.toString(),
+              "X-Signature": signature,
+            },
+          }
+        );
 
-      const offers = response.data?.offers ?? [];
+        const offers = response.data ?? [];
 
-      const normalized: Offer[] = offers.map((o: any) => ({
-        provider: "Ping Perfect",
-        productId: o.productId,
-        title: o.name || o.product,
-        speedMbps: parseInt(o.speedMbps ?? o.speed ?? "0"),
-        pricePerMonth: o.price / 100,
-        durationMonths: o.duration || 24,
-        connectionType: o.connectionType || "DSL",
-        extras: [o.voucher, o.tv, o.limit].filter(Boolean)
-      }));
+        // Normalize the offers to the common offer model
+        const normalized: Offer[] = offers.map((o: any) => ({
+          provider: o.providerName ?? "Ping Perfect",
+          productId: "", // not provided
+          title: o.providerName ?? "Internet Offer",
+          speedMbps: o.productInfo?.speed ?? 0,
+          pricePerMonth: o.pricingDetails?.monthlyCostInCent
+            ? o.pricingDetails.monthlyCostInCent / 100
+            : 0,
+          durationMonths: o.productInfo?.contractDurationInMonths ?? 24,
+          connectionType: o.productInfo?.connectionType ?? "DSL",
+          extras: [
+            o.productInfo?.tv,
+            o.pricingDetails?.installationService,
+          ].filter(Boolean).map(String),
+        }));
 
-      return normalized;
-    } catch (err) {
-      console.error("[Ping Perfect Adapter] Error:", err);
-      return [];
+        allOffers.push(...normalized);
+      } catch (err) {
+        console.error(`[Ping Perfect Adapter] Error (wantsFiber=${wantsFiber}):`, err);
+      }
     }
-  }
+
+    return allOffers;
+  },
 };

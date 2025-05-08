@@ -22,5 +22,5 @@ export const config = {
 
   // Defaults
   DEFAULT_COUNTRY: "DE",
-  API_TIMEOUT_MS: 5000,
+  API_TIMEOUT_MS: 3000,
 };

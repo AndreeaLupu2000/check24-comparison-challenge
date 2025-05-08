@@ -1,7 +1,7 @@
 // src/routes/offerRoute.ts
 
 import { Router, RequestHandler } from "express";
-import { getOffersHandler, streamOffersHandler } from "../controllers/offerController";
+import { getOffersHandler, streamOffersHandler, getLateOffersHandler } from "../controllers/offerController";
 
 /**
  * Router for the offers route
@@ -17,5 +17,8 @@ router.post("/offers", getOffersHandler as RequestHandler);
  * @returns 
  */
 router.get("/offers/stream",  streamOffersHandler as RequestHandler);
+
+
+router.get("/late-offers", getLateOffersHandler as RequestHandler);
 
 export default router;
