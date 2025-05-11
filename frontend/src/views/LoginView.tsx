@@ -9,8 +9,11 @@ const LoginView = () => {
   const [users, setUsers] = useState<UserDto[]>([])
   const [emailInput, setEmailInput] = useState("")
   const [passwordInput, setPasswordInput] = useState("")
-  const { setUser } = useAuth()
+  const [errorMessage, setErrorMessage] = useState("")
+  const [emailError, setEmailError] = useState(false)
+  const [passwordError, setPasswordError] = useState(false)
 
+  const { setUser } = useAuth()
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -20,41 +23,48 @@ const LoginView = () => {
   }, [])
 
   const handleLogin = (email: string, password: string) => {
+    // Clear previous errors
+    setEmailError(false)
+    setPasswordError(false)
+    setErrorMessage("")
+
+    if (!password) {
+      setPasswordError(true)
+      setErrorMessage("Please enter the password")
+      return
+    }
+
     const user = users.find(
       (u) => u.email === email && u.password === password
     )
 
     if (user) {
-      setUser({ id: user.id, email: user.email }) // ✅ Only id + email
+      setUser({ id: user.id, email: user.email })
       navigate("/search")
     } else {
-      const userExists = users.some((u) => u.email === email)
-      alert(userExists ? "Invalid password" : "Invalid email")
+      setEmailError(true)
+      setPasswordError(true)
+      setErrorMessage("Email or password invalid")
     }
   }
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-      {/* Header - logo and title */}
+      {/* Header */}
       <div className="w-full bg-gray-100 py-6 mb-8 mt-10">
         <div className="flex justify-center items-center gap-6 max-w-6xl mx-auto px-4">
           <img src={Icon} alt="GenDevNet Logo" className="w-32 h-auto" />
-          <h1 className="text-5xl font-bold leading-[3.5rem] text-gray-800">
-            GenDevNet
-          </h1>
+          <h1 className="text-5xl font-bold leading-[3.5rem] text-gray-800">GenDevNet</h1>
         </div>
       </div>
 
-      {/* White Login Card */}
+      {/* Login Card */}
       <div className="bg-white p-6 rounded-md shadow-md mb-8">
         <h1 className="text-2xl font-bold mb-6 text-center">Login</h1>
 
         {/* Email Input */}
         <div className="mb-6 relative">
-          <label
-            htmlFor="email"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
             Email
           </label>
           <input
@@ -62,16 +72,15 @@ const LoginView = () => {
             value={emailInput}
             onChange={(e) => setEmailInput(e.target.value)}
             placeholder="example@email.com"
-            className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-1 ${
+              emailError ? "border-red-500 ring-red-500" : "border-gray-300 focus:ring-indigo-500"
+            }`}
           />
         </div>
 
         {/* Password Input */}
         <div className="mb-6 relative">
-          <label
-            htmlFor="password"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
             Password
           </label>
           <input
@@ -79,9 +88,18 @@ const LoginView = () => {
             value={passwordInput}
             onChange={(e) => setPasswordInput(e.target.value)}
             placeholder="********"
-            className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-1 ${
+              passwordError ? "border-red-500 ring-red-500" : "border-gray-300 focus:ring-indigo-500"
+            }`}
           />
         </div>
+
+        {/* Error Message */}
+        {errorMessage && (
+          <div className="mb-4 text-center text-red-600 font-medium">
+            {errorMessage}
+          </div>
+        )}
 
         {/* Login Button */}
         <div className="flex justify-center">

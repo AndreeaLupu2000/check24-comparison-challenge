@@ -6,3 +6,5 @@ export interface AddressDto {
     plz: string;
     countryCode?: string | "DE";
 }
+
+export type AddressInputDto = Omit<AddressDto, "id">

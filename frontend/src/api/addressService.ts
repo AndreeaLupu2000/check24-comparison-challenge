@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { AddressDto } from '../types/AddressDto';
+import { AddressInputDto } from '../types/AddressDto';
 
 const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_PLACE_API; // Replace with your actual API key
 
@@ -35,21 +35,15 @@ export async function validateAddress(
   }
 }
 
-export const createAddress = async (address: AddressDto): Promise<AddressDto> => {
+export const createAddress = async (address: AddressInputDto): Promise<AddressInputDto> => {
   const response = await axios.post(API, address);
   return response.data;
 }
 
-export const getAllAddresses = async (): Promise<AddressDto[]> => {
+export const getAllAddresses = async (): Promise<AddressInputDto[]> => {
   const response = await axios.get(API);
   return response.data;
 }
-
-export const getAddress = async (id: string): Promise<AddressDto> => {
-  const response = await axios.get(`${API}/${id}`);
-  return response.data;
-}
-
 
 
 
