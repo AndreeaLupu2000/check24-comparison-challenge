@@ -1,4 +1,5 @@
 export interface AddressDto {
+    id: string
     street: string;
     houseNumber: string;
     city: string;

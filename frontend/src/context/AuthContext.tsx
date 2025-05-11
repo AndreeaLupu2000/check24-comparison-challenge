@@ -1,47 +1,47 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext } from 'react'
+import { UserDto } from '../types/UserDto'
+
+// Exclude password from context
+type AuthUser = Omit<UserDto, 'password'>
 
 interface AuthContextType {
-  email: string;
-  setEmail: (email: string) => void;
-  password: string;
-  setPassword: (password: string) => void;
+  user: AuthUser
+  setUser: (user: AuthUser) => void
+  clearUser: () => void
+}
+
+const defaultUser: AuthUser = {
+  id: '',
+  email: ''
 }
 
 const AuthContext = createContext<AuthContextType>({
-  email: '',
-  setEmail: () => {},
-  password: '',
-  setPassword: () => {}
-});
+  user: defaultUser,
+  setUser: () => {},
+  clearUser: () => {}
+})
 
 export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [email, setEmail] = useState(() => localStorage.getItem('email') || '');
-  const [password, setPassword] = useState(() => localStorage.getItem('password') || '');
+  const [user, setUserState] = useState<AuthUser>(() => {
+    const stored = localStorage.getItem('user')
+    return stored ? JSON.parse(stored) : defaultUser
+  })
 
-  // Wrap setCode to also update localStorage
-  const setEmailWithStorage = (newEmail: string) => {
-    localStorage.setItem('email', newEmail);
-    setEmail(newEmail);
-  };
+  const setUser = (user: AuthUser) => {
+    localStorage.setItem('user', JSON.stringify(user))
+    setUserState(user)
+  }
 
-  // Wrap setUserId to also update localStorage
-  const setPasswordWithStorage = (newPassword: string) => {
-    localStorage.setItem('password', newPassword);
-    setPassword(newPassword);
-  };
+  const clearUser = () => {
+    localStorage.removeItem('user')
+    setUserState(defaultUser)
+  }
 
   return (
-    <AuthContext.Provider 
-      value={{ 
-        email, 
-        setEmail: setEmailWithStorage,
-        password,
-        setPassword: setPasswordWithStorage
-      }}
-    >
+    <AuthContext.Provider value={{ user, setUser, clearUser }}>
       {children}
     </AuthContext.Provider>
-  );
-};
+  )
+}
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => useContext(AuthContext)

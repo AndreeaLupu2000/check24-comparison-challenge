@@ -147,15 +147,15 @@ export const WebWunderAdapter: WebWunderExtendedAdapter = {
         provider: "WebWunder",
         productId: o["ns2:productId"]?.toString() ?? "unknown",
         title: o["ns2:providerName"] ?? "Unnamed Package",
-        speedMbps: parseInt(o["ns2:productInfo"]?.["ns2:speed"] ?? "0"),
-        pricePerMonth: parseInt(o["ns2:productInfo"]?.["ns2:monthlyCostInCent"] ?? "0") / 100,
-        durationMonths: parseInt(o["ns2:productInfo"]?.["ns2:contractDurationInMonths"] ?? "0"),
+        speedMbps: o["ns2:productInfo"]?.["ns2:speed"] ?? "0",
+        pricePerMonth: (parseInt(o["ns2:productInfo"]?.["ns2:monthlyCostInCent"] ?? "0") / 100).toString(),
+        durationMonths: o["ns2:productInfo"]?.["ns2:contractDurationInMonths"] ?? "24",
         connectionType: o["ns2:productInfo"]?.["ns2:connectionType"] ?? "DSL",
-        extras: [
+        extras: JSON.stringify([
           o["ns2:productInfo"]?.["ns2:voucher"]?.["ns2:percentage"]
             ? `Voucher: ${o["ns2:productInfo"]["ns2:voucher"]["ns2:percentage"]}%`
             : undefined
-        ].filter(Boolean)
+        ].filter(Boolean).map(String)),
       }));
 
       if (!options?.internalCall) {

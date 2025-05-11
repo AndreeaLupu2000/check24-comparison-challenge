@@ -1,9 +1,13 @@
-import React, { createContext, useState, useContext } from 'react';
-import { AddressDto } from '../types/AddressDto';
+import React, { createContext, useState, useContext } from 'react'
+import { AddressDto } from '../types/AddressDto'
+
+// Omit $id if AddressDto includes it (from Appwrite)
+type AddressInput = Omit<AddressDto, 'id'>
 
 interface AddressContextType {
-  address: AddressDto;
-  setAddress: (address: AddressDto) => void;
+  address: AddressInput
+  setAddress: (address: AddressInput) => void
+  clearAddress: () => void
 }
 
 const AddressContext = createContext<AddressContextType>({
@@ -12,39 +16,45 @@ const AddressContext = createContext<AddressContextType>({
     houseNumber: '',
     city: '',
     plz: '',
-    countryCode: 'DE'
   },
-  setAddress: () => {}
-});
+  setAddress: () => {},
+  clearAddress: () => {}
+})
 
 export const AddressContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [address, setAddress] = useState<AddressDto>(() => {
-        const stored = localStorage.getItem('address'); 
-        return stored ? JSON.parse(stored) : {
+  const [address, setAddress] = useState<AddressInput>(() => {
+    const stored = localStorage.getItem('address')
+    return stored
+      ? JSON.parse(stored)
+      : {
+          userId: '',
           street: '',
           houseNumber: '',
           city: '',
-          plz: '',
-          countryCode: 'DE'
-        };
-      });  
+          plz: ''
+        }
+  })
 
-  // Wrap setCode to also update localStorage
-  const setAddressWithStorage = (newAddress: AddressDto) => {
-    localStorage.setItem('address', JSON.stringify(newAddress));
-    setAddress(newAddress);
-  };
+  const setAddressWithStorage = (newAddress: AddressInput) => {
+    localStorage.setItem('address', JSON.stringify(newAddress))
+    setAddress(newAddress)
+  }
+
+  const clearAddress = () => {
+    localStorage.removeItem('address')
+    setAddress({
+      street: '',
+      houseNumber: '',
+      city: '',
+      plz: ''
+    })
+  }
 
   return (
-    <AddressContext.Provider 
-      value={{ 
-        address, 
-        setAddress: setAddressWithStorage,
-      }}
-    >
+    <AddressContext.Provider value={{ address, setAddress: setAddressWithStorage, clearAddress }}>
       {children}
     </AddressContext.Provider>
-  );
-};
+  )
+}
 
-export const useAddress = () => useContext(AddressContext);
+export const useAddress = () => useContext(AddressContext)

@@ -9,14 +9,15 @@ import { getOffersHandler, streamOffersHandler, getLateOffersHandler } from "../
  */
 const router = Router();
 
+
 // Post request to get offers
-router.post("/offers", getOffersHandler as RequestHandler);
+router.post("/", getOffersHandler as RequestHandler);
 
 /**
  * Get request to stream offers to enable Server-Sent Events
  * @returns 
  */
-router.get("/offers/stream",  streamOffersHandler as RequestHandler);
+router.get("/stream",  streamOffersHandler as RequestHandler);
 
 
 router.get("/late-offers", getLateOffersHandler as RequestHandler);

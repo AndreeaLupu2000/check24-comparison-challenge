@@ -5,5 +5,4 @@ export interface AddressInput {
   houseNumber: string;
   city: string;
   plz: string;
-  countryCode?: string | "DE";
 }

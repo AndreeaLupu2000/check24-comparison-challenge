@@ -2,11 +2,11 @@ import axios from "axios";
 import { OfferDto } from "../types/OfferDto";
 import { AddressDto } from "../types/AddressDto";
 
-const API = import.meta.env.VITE_BACKEND_API_URL;
+const API = import.meta.env.VITE_BACKEND_API_URL + '/offers';
 
 
 export const getOffers = async (address: AddressDto): Promise<OfferDto[]> => {
-    const response = await axios.post(`${API}/offers`, address );
+    const response = await axios.post(`${API}`, address );
     return response.data.offers;
 }
 
@@ -19,7 +19,7 @@ export const streamOffers = (
     onError?: (err: Error) => void
   ): EventSource => {
     const query = new URLSearchParams(address as unknown as Record<string, string>).toString();
-    const eventSource = new EventSource(`${API}/offers/stream?${query}`);
+    const eventSource = new EventSource(`${API}/stream?${query}`);
   
     eventSource.onmessage = (event) => {
       const offer: OfferDto = JSON.parse(event.data);
@@ -39,3 +39,9 @@ export const streamOffers = (
   
     return eventSource;
   };
+
+  export const getLateOffers = async (address: AddressDto): Promise<OfferDto[]> => {
+    const query = new URLSearchParams(address as unknown as Record<string, string>).toString()
+    const response = await axios.get(`${API}/offers/late?${query}`)
+    return response.data.offers
+  }

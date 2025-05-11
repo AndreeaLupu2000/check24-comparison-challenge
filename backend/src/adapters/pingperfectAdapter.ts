@@ -56,16 +56,18 @@ export const PingPerfectAdapter: ProviderAdapter = {
           provider: "Ping Perfect",
           productId: "", // not provided
           title: o.providerName ?? "Internet Offer",
-          speedMbps: o.productInfo?.speed ?? 0,
+          speedMbps: o.productInfo?.speed ?? "0",
           pricePerMonth: o.pricingDetails?.monthlyCostInCent
-            ? o.pricingDetails.monthlyCostInCent / 100
-            : 0,
-          durationMonths: o.productInfo?.contractDurationInMonths ?? 24,
+            ? (o.pricingDetails.monthlyCostInCent / 100).toString()
+            : "0",
+          durationMonths: o.productInfo?.contractDurationInMonths.toString() ?? "24",
           connectionType: o.productInfo?.connectionType ?? "DSL",
-          extras: [
-            o.productInfo?.tv,
-            o.pricingDetails?.installationService,
-          ].filter(Boolean).map(String),
+          extras: JSON.stringify([
+            `TV: ${o.productInfo?.tv}`,
+            `Installation Service: ${o.pricingDetails?.installationService}`,
+            `Limit from: ${o.productInfo?.limitFrom}`,
+            `Max age: ${o.productInfo?.maxAge}`,
+          ].filter(Boolean).map(String)),
         }));
 
         allOffers.push(...normalized);

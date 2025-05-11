@@ -10,6 +10,7 @@ import { createSharedOffer } from "../api/shareService";
 import { getAllUsers } from "../api/userService";
 import { useAuth } from "../context/AuthContext";
 import AddressComponent from "../components/AddressComponent";
+import { createAddress } from "../api/addressService";
 
 /**
  * SearchView Component
@@ -84,6 +85,7 @@ const SearchView = () => {
    */
   const onSearch = async () => {
     // Input validation
+    console.log(address);
     if (
       !address.street ||
       !address.houseNumber ||
@@ -93,6 +95,15 @@ const SearchView = () => {
       alert("Please fill in all address fields");
       return;
     }
+
+    await createAddress(
+      {
+        street: address.street,
+        houseNumber: address.houseNumber,
+        plz: address.plz,
+        city: address.city,
+      }
+    );
 
     // Save valid address to localStorage
     localStorage.setItem("address", JSON.stringify(address));

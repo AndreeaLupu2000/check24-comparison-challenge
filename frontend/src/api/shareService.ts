@@ -1,35 +1,35 @@
 import axios from "axios";
 import { ShareDto, CreateShareDto } from "../types/ShareDto";
 
-const API = import.meta.env.VITE_BACKEND_API_URL;
+const API = import.meta.env.VITE_BACKEND_API_URL + '/share';
 
 
 export const createSharedOffer = async (share: CreateShareDto): Promise<ShareDto> => {
-    const response = await axios.post(`${API}/share`, share);
+    const response = await axios.post(`${API}`, share);
     return response.data;
 }
 
 
 export const getSharedOffer = async (id: string): Promise<ShareDto> => {
-    const response = await axios.get(`${API}/share/${id}`);
+    const response = await axios.get(`${API}/${id}`);
     return response.data;
 }
 
 
 export const updateSharedOffer = async (id: string, share: ShareDto): Promise<ShareDto> => {
-    const response = await axios.put(`${API}/share/${id}`, share);
+    const response = await axios.put(`${API}/${id}`, share);
     return response.data;
 }
 
 
 export const deleteSharedOffer = async (id: string): Promise<ShareDto> => {
-    const response = await axios.delete(`${API}/share/${id}`);
+    const response = await axios.delete(`${API}/${id}`);
     return response.data;
 }
 
 
 export const getAllSharedOffers = async (): Promise<ShareDto[]> => {
-    const response = await axios.get(`${API}/share`);
+    const response = await axios.get(API);
     return response.data;
 }
 
