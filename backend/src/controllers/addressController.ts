@@ -1,7 +1,8 @@
 import { Request, Response } from "express"
 import { databases } from "../config/appwrite"
-import { ID, Permission, Role, Query } from "appwrite"
+import { Permission, Role, Query } from "appwrite"
 import asyncHandler from "express-async-handler"
+import { ID} from "node-appwrite"
 
 const DB_ID = process.env.APPWRITE_DATABASE_ID!
 const ADDRESS_COLLECTION_ID = process.env.APPWRITE_ADDRESS_COLLECTION_ID!
@@ -27,10 +28,12 @@ export const createAddress = async (req: Request, res: Response) => {
       return res.status(200).json(result.documents[0])
     }
 
+    const addressId = ID.unique()
+
     const created = await databases.createDocument(
       DB_ID,
       ADDRESS_COLLECTION_ID,
-      ID.unique(),
+      addressId,
       {
         plz,
         city,
@@ -45,7 +48,7 @@ export const createAddress = async (req: Request, res: Response) => {
       ]
     )
 
-    res.status(201).json(created)
+    res.status(201).json({ id: addressId, ...created })
   } catch (error) {
     console.error("[createOrGetAddress]", error)
     res.status(500).json({ error: "Internal server error" })

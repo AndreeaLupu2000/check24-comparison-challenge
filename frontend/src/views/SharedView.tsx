@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getSharedOffer } from "../api/shareService";
+import { getOfferById } from "../api/offerService";
 import { OfferDto } from "../types/OfferDto";
 import { AddressDto } from "../types/AddressDto";
 import OfferCard from "../components/OfferCard";
+import OfferCardDetailModal from "../components/OfferCardDetailModal";
 
 const SharedView = () => {
   const { id } = useParams<{ id: string }>();
@@ -11,16 +13,25 @@ const SharedView = () => {
   const [address, setAddress] = useState<AddressDto>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedOffer, setSelectedOffer] = useState<OfferDto | null>(null);
+
 
   useEffect(() => {
     if (!id) return;
 
     getSharedOffer(id)
-      .then((share) => {
-        // Ensure offers is an array
-        const offersArray = Array.isArray(share.offers) ? share.offers : [];
-        setOffers(offersArray);
-        setAddress(share.address);
+      .then(async (share) => {
+        const parsedAddress: AddressDto = JSON.parse(share.address);
+        setAddress(parsedAddress); // ✅ Now it's usable in JSX
+
+        if (!Array.isArray(share.offerIds)) {
+          throw new Error("Invalid offerIds");
+        }
+
+        const offerPromises = share.offerIds.map((offerId) => getOfferById(offerId));
+        const fullOffers = await Promise.allSettled(offerPromises);
+
+        setOffers(fullOffers);
         setLoading(false);
       })
       .catch(() => {
@@ -52,11 +63,15 @@ const SharedView = () => {
       {offers.length > 0 ? (
         <div className="space-y-4">
           {offers.map((offer, index) => (
-            <OfferCard key={index} offer={offer} onView={() => {}} />
+            <OfferCard key={index} offer={offer} onView={() => setSelectedOffer(offer)} />
           ))}
         </div>
       ) : (
         <p className="text-center text-gray-500">No offers available for this share link.</p>
+      )}
+      
+      {selectedOffer && (
+        <OfferCardDetailModal offer={selectedOffer} onClose={() => setSelectedOffer(null)} />
       )}
     </div>
   );

@@ -1,9 +1,9 @@
-import { AddressDto } from "./AddressDto";
+import { AddressInputDto } from "./AddressDto";
 
 export interface ShareDto {
     id: string;
     userId: string;
-    address: AddressDto | string;
+    address: AddressInputDto | string;
     offers: string[];
     createdAt: string;
 }

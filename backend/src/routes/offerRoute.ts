@@ -1,7 +1,7 @@
 // src/routes/offerRoute.ts
 
 import { Router, RequestHandler } from "express";
-import { getOffersHandler, streamOffersHandler, getLateOffersHandler } from "../controllers/offerController";
+import { getOffersHandler, streamOffersHandler, getLateOffersHandler, createOfferHandler, getOfferByIdHandler } from "../controllers/offerController";
 
 /**
  * Router for the offers route
@@ -12,6 +12,8 @@ const router = Router();
 
 // Post request to get offers
 router.post("/", getOffersHandler as RequestHandler);
+router.post("/create", createOfferHandler as RequestHandler);
+router.get("/search/:id", getOfferByIdHandler as RequestHandler);
 
 /**
  * Get request to stream offers to enable Server-Sent Events

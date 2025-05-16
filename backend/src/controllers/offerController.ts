@@ -10,7 +10,8 @@ import { VerbynDichAdapter } from "../adapters/verbyndichAdapter"
 import { ServusSpeedAdapter } from "../adapters/servusspeedAdapter"
 import { lateOffersCache } from "../models/LateOffersCacheModel"
 import { databases } from "../config/appwrite"
-import { ID, Permission, Role } from "appwrite"
+import { Permission, Role } from "appwrite"
+import { ID } from "node-appwrite"
 import { retryWithTimeout } from "./utils/retry"
 
 const DB_ID = process.env.APPWRITE_DATABASE_ID!
@@ -61,10 +62,12 @@ export const getOffersHandler = async (req: Request, res: Response) => {
     // Persist fast offers to Appwrite
     for (const offer of offers) {
       try {
+
+        const offerId = ID.unique()
         await databases.createDocument(
           DB_ID,
           OFFER_COLLECTION_ID,
-          ID.unique(),
+          offerId,
           {
             provider: offer.provider,
             productId: offer.productId,
@@ -176,4 +179,50 @@ export const getLateOffersHandler = (req: Request, res: Response) => {
 
   delete lateOffersCache[key] // optional: clear after retrieval
   res.status(200).json({ offers })
+}
+
+export const createOfferHandler = async (req: Request, res: Response) => {
+  const { provider, productId, title, speedMbps, pricePerMonth, durationMonths, connectionType, extras }: Offer = req.body
+  const offerId = ID.unique()
+  try {
+    const offer = await databases.createDocument(
+      DB_ID, 
+      OFFER_COLLECTION_ID, 
+      offerId, 
+      {
+        provider,
+        productId,
+        title,
+        speedMbps,
+        pricePerMonth,
+        durationMonths,
+        connectionType,
+        extras,
+      },
+      [
+        Permission.read(Role.any()),
+        Permission.update(Role.any()),
+        Permission.delete(Role.any()),
+      ]
+    )
+    res.status(200).json(offer)
+  } catch (err) {
+    console.error("[createOfferHandler] Error:", err)
+    res.status(500).json({ error: "Internal server error" })
+  }
+}
+
+export const getOfferByIdHandler = async (req: Request, res: Response) => {
+  const { id } = req.params
+  try {
+    const response = await databases.getDocument(
+      DB_ID, 
+      OFFER_COLLECTION_ID, 
+      id
+    );
+    res.status(200).json(response)
+  } catch (err) {
+    console.error("[getOfferByIdHandler] Error:", err)
+    res.status(500).json({ error: "Internal server error" })
+  }
 }

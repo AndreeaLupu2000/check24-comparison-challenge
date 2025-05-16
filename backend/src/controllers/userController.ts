@@ -1,7 +1,8 @@
 import asyncHandler from "express-async-handler"
 import { Request, Response } from "express"
 import { databases } from "../config/appwrite"
-import { ID, Permission, Role, Query } from "appwrite"
+import { Permission, Role } from "appwrite"
+import { ID } from "node-appwrite"
 
 
 const DB_ID = process.env.APPWRITE_DATABASE_ID!
@@ -30,10 +31,12 @@ export const registerUser = asyncHandler(async (req: Request, res: Response) => 
   }
 
   try {
+    const userId = ID.unique()
+
     const created = await databases.createDocument(
       DB_ID,
       USER_COLLECTION_ID,
-      ID.unique(),
+      userId,
       {
         email,
         password,
@@ -45,11 +48,7 @@ export const registerUser = asyncHandler(async (req: Request, res: Response) => 
       ]
     );
 
-    res.status(201).json({
-      id: created.$id,
-      email,
-      password,
-    });
+    res.status(201).json({ id: userId, ...created });
 
   } catch (error) {
     console.error("Appwrite error:", JSON.stringify(error, null, 2));

@@ -1,7 +1,8 @@
 import { Request, Response } from "express"
 import { databases } from "../config/appwrite"
-import { ID, Permission, Role, Query } from "appwrite"
+import { Permission, Role, Query } from "appwrite"
 import asyncHandler from "express-async-handler"
+import { ID } from "node-appwrite"
 
 const DB_ID = process.env.APPWRITE_DATABASE_ID!
 const SHARE_COLLECTION_ID = process.env.APPWRITE_SHARE_COLLECTION_ID!
@@ -22,10 +23,11 @@ export const createSharedOffer = asyncHandler(async (req: Request, res: Response
   }
 
   try {
+    const shareId = ID.unique()
     const share = await databases.createDocument(
       DB_ID,
       SHARE_COLLECTION_ID,
-      ID.unique(),
+      shareId,
       {
         userId,
         address: JSON.stringify(address),
@@ -40,7 +42,7 @@ export const createSharedOffer = asyncHandler(async (req: Request, res: Response
     )
 
     res.status(201).json({
-        id: share.$id,
+        id: shareId,
         userId: share.userId,
         address: JSON.parse(share.address),
         offerIds: share.offerIds,

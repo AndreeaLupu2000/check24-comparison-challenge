@@ -1,7 +1,7 @@
 import axios from "axios";
 import { ShareDto, CreateShareDto } from "../types/ShareDto";
 
-const API = import.meta.env.VITE_BACKEND_API_URL + '/share';
+const API = import.meta.env.VITE_BACKEND_API_URL + '/shares';
 
 
 export const createSharedOffer = async (share: CreateShareDto): Promise<ShareDto> => {

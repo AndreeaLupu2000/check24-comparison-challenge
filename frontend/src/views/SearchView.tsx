@@ -1,14 +1,17 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { OfferDto } from "../types/OfferDto"
 import { useAddress } from "../context/AddressContext"
-import { streamOffers } from "../api/offerService"
+import { createOffer, streamOffers } from "../api/offerService"
 import OfferCard from "../components/OfferCard"
 import Icon from "../assets/icon.png"
 import { createSharedOffer } from "../api/shareService"
 import { useAuth } from "../context/AuthContext"
 import AddressComponent from "../components/AddressComponent"
 import { createAddress } from "../api/addressService"
+import { createUserAddress } from "../api/userAddressService"
+import OfferCardDetailModal from "../components/OfferCardDetailModal";
+import OfferFilter from "../components/OfferFilterComponent";
 
 const SearchView = () => {
   const { address, setAddress } = useAddress()
@@ -27,7 +30,11 @@ const SearchView = () => {
 
   const navigate = useNavigate()
   const location = useLocation()
-  const offersArray: OfferDto[] = []
+  const offersRef = useRef<OfferDto[]>([])
+  const [selectedOffer, setSelectedOffer] = useState<OfferDto | null>(null);
+  const [showFilter, setShowFilter] = useState(false);
+  const [filteredOffers, setFilteredOffers] = useState<OfferDto[]>([]);
+
 
   // Auto-load address from URL or localStorage
   useEffect(() => {
@@ -60,14 +67,71 @@ const SearchView = () => {
     }
   }, [])
 
+  const handleNewOffer = (offer: OfferDto) => {
+    offersRef.current.push(offer)
+    setOffers((prev) => [...prev, offer])
+    setLoading(false)
+  }
+
+  const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+  const createSharedLink = async () => {
+    try {
+      // 1. Persist only the displayed offers
+      const offerCreationPromises = offersRef.current.map(async (offer) => {
+        const savedOffer = await createOffer({
+          ...offer,
+          speedMbps: String(offer.speedMbps),
+          pricePerMonth: String(offer.pricePerMonth),
+          durationMonths: String(offer.durationMonths),
+          extras: typeof offer.extras === "string" ? offer.extras : JSON.stringify(offer.extras),
+        });
+
+        await sleep(1000);
+        
+        return savedOffer.$id; // Only need the Appwrite document ID
+      });
+  
+      const offerIds = await Promise.all(offerCreationPromises);
+  
+      // 2. Create share document with the collected Appwrite offer IDs
+      const share = await createSharedOffer({
+        userId: user.id,
+        address: JSON.stringify(address),
+        offerIds,
+      });
+  
+      setShareId(share.id);
+  
+      const shareUrl = `${window.location.origin}/share/${share.id}`;
+  
+      // 3. Optional: update URL with address info
+      navigate(
+        `/search?street=${encodeURIComponent(address.street)}&houseNumber=${encodeURIComponent(
+          address.houseNumber
+        )}&city=${encodeURIComponent(address.city)}&plz=${encodeURIComponent(address.plz)}`
+      );
+  
+      // 4. Open WhatsApp share link
+      window.open(
+        `https://wa.me/?text=${encodeURIComponent(`Check out these offers: ${shareUrl}`)}`,
+        "_blank"
+      );
+    } catch (err) {
+      console.error("Failed to create share link", err);
+    }
+  };  
+  
+  
+  
   const onSearch = async () => {
     if (!address.street || !address.houseNumber || !address.city || !address.plz) {
       alert("Please fill in all address fields")
       return
     }
 
-    // Store address in Appwrite DB
-    await createAddress({
+      // 1. Store the address and get back the created address with its ID
+    const savedAddress = await createAddress({
       street: address.street,
       houseNumber: address.houseNumber,
       city: address.city,
@@ -75,7 +139,15 @@ const SearchView = () => {
       countryCode: address.countryCode || "DE"
     })
 
+    // 2. Save relation to user (UserAddressDto)
+    await createUserAddress({
+      userId: user.id, 
+      addressId: savedAddress.$id // also a number
+    })
+
     localStorage.setItem("address", JSON.stringify(address))
+
+    offersRef.current = [] //Clear the previous stored offers
 
     setOffers([])
     setLoading(true)
@@ -89,15 +161,6 @@ const SearchView = () => {
     )
   }
 
-  const handleNewOffer = (offer: OfferDto) => {
-    setOffers((prev) => {
-      const updated = [...prev, offer]
-      offersArray.push(offer)
-      return updated
-    })
-    setLoading(false)
-  }
-
   const handleStreamComplete = async () => {
     setLoading(false)
     setIsStreaming(false)
@@ -107,27 +170,6 @@ const SearchView = () => {
       console.warn("No user ID available for sharing")
       return
     }
-
-    // Share result to backend
-    createSharedOffer({
-      userId: user.id,
-      address,
-      offerIds: offersArray.map((o) => o.productId) // or $id if Appwrite stored
-    })
-      .then((share) => {
-        setShareId(share.id)
-        const shareUrl = `${window.location.origin}/share/${share.id}`
-        console.log(shareUrl)
-      })
-      .catch((err) => {
-        console.error("Failed to create share link", err)
-      })
-
-    navigate(
-      `/search?street=${encodeURIComponent(address.street)}&houseNumber=${encodeURIComponent(
-        address.houseNumber
-      )}&city=${encodeURIComponent(address.city)}&plz=${encodeURIComponent(address.plz)}`
-    )
   }
 
   const handleStreamError = () => {
@@ -135,14 +177,21 @@ const SearchView = () => {
     setIsStreaming(false)
   }
 
-  const sortedOffers = sortBy
-    ? [...offers].sort((a, b) => {
-        if (sortBy === "price low to high") return parseFloat(a.pricePerMonth) - parseFloat(b.pricePerMonth)
-        if (sortBy === "price high to low") return parseFloat(b.pricePerMonth) - parseFloat(a.pricePerMonth)
-        if (sortBy === "speed high to low") return parseFloat(b.speedMbps) - parseFloat(a.speedMbps)
-        return parseFloat(a.speedMbps) - parseFloat(b.speedMbps)
+  const baseList = filteredOffers.length > 0 ? filteredOffers : offers;
+
+  const displayOffers = sortBy
+    ? [...baseList].sort((a, b) => {
+        if (sortBy === "price low to high")
+          return parseFloat(a.pricePerMonth) - parseFloat(b.pricePerMonth);
+        if (sortBy === "price high to low")
+          return parseFloat(b.pricePerMonth) - parseFloat(a.pricePerMonth);
+        if (sortBy === "speed high to low")
+          return parseFloat(b.speedMbps) - parseFloat(a.speedMbps);
+        if (sortBy === "speed low to high")
+          return parseFloat(a.speedMbps) - parseFloat(b.speedMbps);
+        return 0;
       })
-    : offers
+    : baseList;
 
   const shareUrl = shareId
     ? `${window.location.origin}/share/${shareId}`
@@ -174,13 +223,15 @@ const SearchView = () => {
             Search
           </button>
           <button
-            onClick={() =>
-              window.open(
-                `https://wa.me/?text=${encodeURIComponent(
-                  `Check out these offers: ${shareUrl}`
-                )}`,
-                "_blank"
-              )
+            onClick={() =>{
+              createSharedLink()
+                window.open(
+                  `https://wa.me/?text=${encodeURIComponent(
+                    `Check out these offers: ${shareUrl}`
+                  )}`,
+                  "_blank"
+                )
+              }
             }
             className="w-full max-w-[200px] bg-green-500 text-white px-6 py-3 rounded-md hover:bg-green-600 text-lg font-medium transition-colors duration-200"
           >
@@ -189,40 +240,54 @@ const SearchView = () => {
         </div>
       </div>
 
-      <div className="flex justify-end mb-4">
-        <label className="mr-2 text-sm font-medium text-gray-700 self-center">Sort by:</label>
-        <select
-          value={sortBy ?? ""}
-          onChange={(e) =>
-            setSortBy(
-              [
-                "price low to high",
-                "price high to low",
-                "speed high to low",
-                "speed low to high"
-              ].includes(e.target.value)
-                ? (e.target.value as typeof sortBy)
-                : undefined
-            )
-          }
+      <div className="flex justify-between items-center mb-4 gap-4 flex-wrap">
+        {/* Filter Toggle Button */}
+        <button
           className="px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          onClick={() => setShowFilter(prev => !prev)}
         >
-          <option value="">Select Sorting</option>
-          <option value="price low to high">Price (Low to High)</option>
-          <option value="price high to low">Price (High to Low)</option>
-          <option value="speed high to low">Speed (High to Low)</option>
-          <option value="speed low to high">Speed (Low to High)</option>
-        </select>
+          {showFilter ? "Hide Filters" : "Show Filters"}
+        </button>
+
+        {/* Sort Selector */}
+        <div className="flex items-center">
+          <label className="mr-2 text-sm font-medium text-gray-700 self-center">Sort by:</label>
+          <select
+            value={sortBy ?? ""}
+            onChange={(e) =>
+              setSortBy(
+                [
+                  "price low to high",
+                  "price high to low",
+                  "speed high to low",
+                  "speed low to high"
+                ].includes(e.target.value)
+                  ? (e.target.value as typeof sortBy)
+                  : undefined
+              )
+            }
+            className="px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            <option value="">Select Sorting</option>
+            <option value="price low to high">Price (Low to High)</option>
+            <option value="price high to low">Price (High to Low)</option>
+            <option value="speed high to low">Speed (High to Low)</option>
+            <option value="speed low to high">Speed (Low to High)</option>
+          </select>
+        </div>
       </div>
 
+      {showFilter && (
+        <OfferFilter offers={offers} onFilter={setFilteredOffers} />
+      )}
       {loading && offers.length === 0 ? (
         <div className="flex justify-center items-center min-h-[30vh]">
           <div className="h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
-      ) : sortedOffers.length > 0 ? (
+      ) : displayOffers.length > 0 ? (
         <div className="space-y-4">
-          {sortedOffers.map((offer, index) => (
-            <OfferCard key={index} offer={offer} onView={() => {}} />
+          {displayOffers.map((offer, index) => (
+            <OfferCard key={index} offer={offer} onView={() => setSelectedOffer(offer)} />
           ))}
           {isStreaming && (
             <div className="flex justify-center items-center py-4">
@@ -235,6 +300,10 @@ const SearchView = () => {
         <div className="text-center text-gray-500 mt-6">
           {isStreaming ? "Searching for offers..." : "No offers available for this address."}
         </div>
+      )}
+
+      {selectedOffer && (
+        <OfferCardDetailModal offer={selectedOffer} onClose={() => setSelectedOffer(null)} />
       )}
     </div>
   )

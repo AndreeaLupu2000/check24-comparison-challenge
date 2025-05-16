@@ -45,3 +45,14 @@ export const streamOffers = (
     const response = await axios.get(`${API}/offers/late?${query}`)
     return response.data.offers
   }
+
+  export const createOffer = async (offer: OfferDto): Promise<OfferDto> => {
+    const response = await axios.post(`${API}/create`, offer)
+    return response.data
+  }
+
+export const getOfferById = async (id: string): Promise<OfferDto> => {
+  const response = await axios.get(`${API}/search/${id}`);
+  return response.data;
+};
+
