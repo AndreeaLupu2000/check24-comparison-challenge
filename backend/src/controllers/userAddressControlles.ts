@@ -6,7 +6,7 @@ import { ID } from "node-appwrite"
 
 const DB_ID = process.env.APPWRITE_DATABASE_ID!;
 const USER_ADDRESS_COLLECTION_ID = process.env.APPWRITE_USERADDRESS_COLLECTION_ID!;
-
+const ADDRESS_COLLECTION_ID = process.env.APPWRITE_ADDRESS_COLLECTION_ID!;
 export const createUserAddress = asyncHandler(async (req: Request, res: Response) => {
     const { userId, addressId } = req.body;
 
@@ -94,6 +94,33 @@ export const getAllUserAddresses = asyncHandler(async (req: Request, res: Respon
     }
 });
 
+
+export const getLastUsedAddressByUserId = asyncHandler(async (req: Request, res: Response) => {
+    const { userId } = req.params;
+  // Step 1: get latest UserAddress entry
+  try {
+        const userAddresses = await databases.listDocuments(DB_ID, USER_ADDRESS_COLLECTION_ID, [
+        Query.equal('userId', userId),
+        Query.orderDesc('$createdAt'),
+        Query.limit(1)
+        ]);
+
+    if (userAddresses.documents.length === 0) 
+        res.status(404).json({ message: "No user addresses found" });
+    
+
+    const lastUserAddress = userAddresses.documents[0];
+    const addressId = lastUserAddress.addressId;
+
+    // Step 2: get the linked address document
+    const address = await databases.getDocument(DB_ID, ADDRESS_COLLECTION_ID, addressId);
+  
+   res.status(200).json(address);
+} catch (error) {
+    console.error("Appwrite error:", JSON.stringify(error, null, 2));
+    res.status(500).json({ message: "Failed to get last used address", error });
+}
+});
 
 
 

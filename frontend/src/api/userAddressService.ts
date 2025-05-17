@@ -12,8 +12,23 @@ export const getUserAddresses =  async() : Promise<UserAddressInputDto[]> => {
     const response = await axios.get(API_URL);
     return response.data;
 };
-  
 
+export const getLastUsedAddressByUserId = async (userId: string) => {
+    try {
+      const response = await axios.get(`${API_URL}/lastUsed/${userId}`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response && error.response.status === 404) {
+        // Handle 404 specifically
+        console.warn("No address found for user");
+        return null; // or handle however you'd like
+      }
+      // Handle other errors
+      console.error("An error occurred:", error);
+      throw error; // or return a default/fallback value
+    }
+  };
+  
 
 
 

@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import { useAddress } from '../context/AddressContext'
+import { useAuth } from '../context/AuthContext';
+import { getLastUsedAddressByUserId } from '../api/userAddressService';
+import { AddressDto } from '../types/AddressDto';
 
 const AddressComponent: React.FC = () => {
   const { setAddress } = useAddress()
@@ -14,9 +17,14 @@ const AddressComponent: React.FC = () => {
   const [streetSuggestions, setStreetSuggestions] = useState<string[]>([])
   const [plzSelected, setPlzSelected] = useState(false)
   const [streetSelected, setStreetSelected] = useState(false)
+  const [sessionAddress, setSessionAddress] = useState<AddressDto | null>(null);
+  const [showSessionSuggestion, setShowSessionSuggestion] = useState(false);
+  const [sessionUsed, setSessionUsed] = useState(false);
+  const { user } = useAuth();
 
   const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null)
   const geocoderRef = useRef<google.maps.Geocoder | null>(null)
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (window.google) {
@@ -26,7 +34,18 @@ const AddressComponent: React.FC = () => {
   }, [])
 
   useEffect(() => {
-    if (plzSelected) return
+    const handleClickOutside = (event: MouseEvent) => {
+      if (inputRef.current && !inputRef.current.contains(event.target as Node)) {
+        setPlzSuggestions([]);
+        setShowSessionSuggestion(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [])
+
+  useEffect(() => {
+    if (plzSelected || sessionUsed) return
     const timeout = setTimeout(() => {
       if (!autocompleteServiceRef.current || plz.length < 2) return
 
@@ -47,7 +66,21 @@ const AddressComponent: React.FC = () => {
     }, 300)
 
     return () => clearTimeout(timeout)
-  }, [plz])
+  }, [plz, sessionUsed])
+
+  const handleFocus = async () => {
+    if (!user.id) return;
+    try {
+      const fetchedAddress = await getLastUsedAddressByUserId(user.id);
+      if (fetchedAddress) {
+        setSessionAddress(fetchedAddress);
+        setShowSessionSuggestion(true);
+        setSessionUsed(false);
+      }
+    } catch (err) {
+      console.error("Failed to load session address", err);
+    }
+  };
 
   const handlePlzSelect = async (selectedPlz: string) => {
     setPlz(selectedPlz)
@@ -113,7 +146,6 @@ const AddressComponent: React.FC = () => {
     })
   }
 
-  // Push final address to context whenever it's valid
   useEffect(() => {
     if (street && houseNumber && city && plz) {
       setAddress({
@@ -121,12 +153,11 @@ const AddressComponent: React.FC = () => {
         houseNumber,
         city,
         plz,
-        countryCode: 'DE' // ✅ Always set explicitly
+        countryCode: 'DE'
       })
     }
   }, [street, houseNumber, city, plz])
 
-  // Filter street suggestions
   useEffect(() => {
     if (streetSelected) return
     const query = street.toLowerCase()
@@ -151,19 +182,44 @@ const AddressComponent: React.FC = () => {
             <label htmlFor="plz" className="text-sm font-medium text-gray-700 mb-1">
               PLZ
             </label>
-            <div className="relative">
+            <div className="relative" ref={inputRef}>
               <input
                 id="plz"
                 type="text"
                 value={plz}
+                onFocus={handleFocus}
                 onChange={(e) => {
                   setPlz(e.target.value)
                   setPlzSelected(false)
+                  setShowSessionSuggestion(false)
+                  setSessionUsed(false)
                 }}
                 placeholder="12345"
                 className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
               />
-              {plzSuggestions.length > 0 && (
+
+              {showSessionSuggestion && sessionAddress && (
+                <div
+                  className="absolute bg-white border border-gray-300 rounded shadow-md p-3 mt-1 z-20 cursor-pointer"
+                  onClick={() => {
+                    setStreet(sessionAddress.street);
+                    setHouseNumber(sessionAddress.houseNumber);
+                    setCity(sessionAddress.city);
+                    setPlz(sessionAddress.plz);
+                    setShowSessionSuggestion(false);
+                    setSessionUsed(true);
+                    setPlzSelected(true);
+                    setPlzSuggestions([]);
+                  }}
+                >
+                  <div className="text-sm text-gray-600">Use last address:</div>
+                  <div className=" text-gray-800">
+                    {sessionAddress.plz} {sessionAddress.city}. {sessionAddress.street} {sessionAddress.houseNumber}
+                  </div>
+                </div>
+              )}
+
+              {plzSuggestions.length > 0 && !sessionUsed && (
                 <div className="absolute z-10 bg-white border border-gray-300 rounded-md shadow-lg mt-1 w-full max-h-60 overflow-auto">
                   {plzSuggestions.map((s, i) => (
                     <div
