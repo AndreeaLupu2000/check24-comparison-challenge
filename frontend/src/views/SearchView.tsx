@@ -34,9 +34,16 @@ const SearchView = () => {
   const [selectedOffer, setSelectedOffer] = useState<OfferDto | null>(null);
   const [showFilter, setShowFilter] = useState(false);
   const [filteredOffers, setFilteredOffers] = useState<OfferDto[]>([]);
+  const [addressErrors, setAddressErrors] = useState<{
+    plz?: string;
+    city?: string;
+    street?: string;
+    houseNumber?: string;
+  }>({});
+  
 
 
-  // Auto-load address from URL or localStorage
+  // Auto-load address from URL or localStorage. It applies automatically the address and searches for offers.
   useEffect(() => {
     const params = new URLSearchParams(location.search)
     const street = params.get("street") || ""
@@ -66,6 +73,7 @@ const SearchView = () => {
       }
     }
   }, [])
+  
 
   const handleNewOffer = (offer: OfferDto) => {
     offersRef.current.push(offer)
@@ -125,9 +133,17 @@ const SearchView = () => {
   
   
   const onSearch = async () => {
-    if (!address.street || !address.houseNumber || !address.city || !address.plz) {
-      alert("Please fill in all address fields")
-      return
+    const newErrors: typeof addressErrors = {};
+
+    if (!address.plz) newErrors.plz = "Please enter the PLZ.";
+    if (!address.city) newErrors.city = "Please enter the city.";
+    if (!address.street) newErrors.street = "Please enter the street.";
+    if (!address.houseNumber) newErrors.houseNumber = "Please enter the number.";
+
+    setAddressErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
+      return;
     }
 
       // 1. Store the address and get back the created address with its ID
@@ -201,6 +217,12 @@ const SearchView = () => {
         address.city
       )}&plz=${encodeURIComponent(address.plz)}`
 
+  // Clear error when field is changed
+  const handleFieldChange = (field: keyof typeof addressErrors) => {
+    setAddressErrors((prev) => ({ ...prev, [field]: undefined }));
+  };
+      
+
   return (
     <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="w-full py-6 mb-8 mt-10">
@@ -213,7 +235,7 @@ const SearchView = () => {
       <div className="bg-white p-6 rounded-md shadow-md mb-8">
         <h1 className="text-2xl font-bold mb-6 text-center">Search Internet Providers</h1>
 
-        <AddressComponent />
+        <AddressComponent errors={addressErrors} onFieldChange={handleFieldChange} />
 
         <div className="flex justify-center gap-4 mt-2">
           <button

@@ -5,8 +5,20 @@ import { useAuth } from '../context/AuthContext';
 import { getLastUsedAddressByUserId } from '../api/userAddressService';
 import { AddressDto } from '../types/AddressDto';
 
-const AddressComponent: React.FC = () => {
-  const { setAddress } = useAddress()
+interface AddressComponentProps {
+  errors?: {
+    plz?: string;
+    city?: string;
+    street?: string;
+    houseNumber?: string;
+  };
+
+  onFieldChange?: (field: "plz" | "city" | "street" | "houseNumber") => void;
+}
+
+
+const AddressComponent: React.FC<AddressComponentProps> = ({ errors = {}, onFieldChange }) => {
+  const { address, setAddress } = useAddress()
 
   const [plz, setPlz] = useState('')
   const [city, setCity] = useState('')
@@ -25,6 +37,14 @@ const AddressComponent: React.FC = () => {
   const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null)
   const geocoderRef = useRef<google.maps.Geocoder | null>(null)
   const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    setPlz(address.plz || "");
+    setCity(address.city || "");
+    setStreet(address.street || "");
+    setHouseNumber(address.houseNumber || "");
+  }, []);
+  
 
   useEffect(() => {
     if (window.google) {
@@ -193,10 +213,17 @@ const AddressComponent: React.FC = () => {
                   setPlzSelected(false)
                   setShowSessionSuggestion(false)
                   setSessionUsed(false)
+                  onFieldChange?.("plz");
                 }}
                 placeholder="12345"
-                className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500
+                ${errors.plz ? "border-red-500 ring-red-500" : "border-gray-300 focus:ring-indigo-500"}`}
               />
+
+              {errors.plz && (
+                <span className="text-red-500 text-xs mt-1">{errors.plz}</span>
+              )}
+
 
               {showSessionSuggestion && sessionAddress && (
                 <div
@@ -244,10 +271,20 @@ const AddressComponent: React.FC = () => {
               id="city"
               type="text"
               value={city}
+              onChange={(e) => {
+                setCity(e.target.value)
+                onFieldChange?.("city");
+              }}
               readOnly
               placeholder="City auto-filled"
-              className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500
+              ${errors.city ? "border-red-500 ring-red-500" : "border-gray-300 focus:ring-indigo-500"}`}
             />
+
+            {errors.city && (
+              <span className="text-red-500 text-xs mt-1">{errors.city}</span>
+            )}
+
           </div>
 
           {/* Street */}
@@ -266,10 +303,15 @@ const AddressComponent: React.FC = () => {
                   if (value !== street) {
                     setStreetSelected(false)
                   }
+                  onFieldChange?.("street");
                 }}
                 placeholder="Musterstraße"
                 className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
               />
+              {errors.street && (
+                <span className="text-red-500 text-xs mt-1">{errors.street}</span>
+              )}
+
               {streetSuggestions.length > 0 && (
                 <div className="absolute z-10 bg-white border border-gray-300 rounded-md shadow-lg mt-1 w-full max-h-60 overflow-auto">
                   {streetSuggestions.map((s, i) => (
@@ -299,10 +341,18 @@ const AddressComponent: React.FC = () => {
               id="houseNumber"
               type="text"
               value={houseNumber}
-              onChange={(e) => setHouseNumber(e.target.value)}
+              onChange={(e) => {
+                setHouseNumber(e.target.value)
+                onFieldChange?.("houseNumber");
+              }}
               placeholder="123"
-              className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500
+              ${errors.houseNumber ? "border-red-500 ring-red-500" : "border-gray-300 focus:ring-indigo-500"}`}
             />
+
+            {errors.houseNumber && (
+              <span className="text-red-500 text-xs mt-1">{errors.houseNumber}</span>
+            )}
           </div>
         </div>
       </div>
