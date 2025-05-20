@@ -327,6 +327,20 @@ const SearchView = () => {
   // ------------------------ JSX: Search View Layout ------------------------
   return (
     <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="fixed top-4 left-4 z-50">
+        <button
+          onClick={() => {
+            localStorage.removeItem("address")
+            localStorage.removeItem("user")
+            setOffers([])
+            setFilteredOffers([])
+            navigate("/")
+          }}
+          className="text-indigo-600 hover:underline text-sm bg-white px-3 py-1 rounded shadow"
+        >
+          ← Back to Login
+        </button>
+      </div>
       <div className="w-full py-6 mb-8 mt-10">
         {/* ------------------ Logo and title ------------------ */}
         <div className="flex justify-center items-center gap-6 max-w-6xl mx-auto px-4">

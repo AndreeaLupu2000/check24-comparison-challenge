@@ -4,8 +4,12 @@ import { useAuth } from "../context/AuthContext"
 import { UserDto } from "../types/UserDto"
 import Icon from "../assets/icon.png"
 import { getAllUsers } from "../api/userService"
+import { useAddress } from "../context/AddressContext"
 
 const LoginView = () => {
+  // Context for the address
+  const { setAddress } = useAddress()
+  
   // Local state for all users
   const [users, setUsers] = useState<UserDto[]>([])
 
@@ -53,6 +57,12 @@ const LoginView = () => {
     // If user is found, set the current user and navigate to the search view
     if (user) {
       setUser({ id: user.id, email: user.email })
+      setAddress({
+        street: '',
+        houseNumber: '',
+        plz: '',
+        city: ''
+      })
       navigate("/search")
     } else {
       // If user is not found, set the error messages
@@ -126,6 +136,18 @@ const LoginView = () => {
             Login
           </button>
         </div>
+
+        {/* ------------------ Sign Up Link ------------------ */}
+        <div className="text-center mt-4">
+          <span className="text-sm text-gray-600">Don't have an account?</span>
+          <button
+            onClick={() => navigate("/signup")}
+            className="text-indigo-600 hover:underline ml-1 text-sm"
+          >
+            Sign up
+          </button>
+        </div>
+
       </div>
     </div>
   )
