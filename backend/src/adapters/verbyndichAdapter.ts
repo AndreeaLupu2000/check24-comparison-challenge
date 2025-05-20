@@ -52,15 +52,15 @@ export const VerbynDichAdapter: ProviderAdapter = {
         // normalize the offer to the common offer model and add it to the list of offers
         offers.push({
           provider: "VerbynDich",
-          productId: data.product || `page-${page}`,
+          productId: `${page}`,
           title: data.product,
-          speedMbps: speedMatch ? parseInt(speedMatch[1]) : 0,
+          speedMbps: speedMatch ? speedMatch[1].toString() : "0",
           pricePerMonth: priceMatch
-            ? parseFloat(`${priceMatch[1]}.${priceMatch[2] || "00"}`)
-            : 0,
-          durationMonths: durationMatch ? parseInt(durationMatch[1]) : 24,
+            ? `${priceMatch[1]}.${priceMatch[2] || "00"}`
+            : "0",
+          durationMonths: durationMatch ? durationMatch[1].toString() : "24",
           connectionType: connectionTypeMatch ? connectionTypeMatch[1].toUpperCase() : "UNKNOWN",
-          extras: [data.description]
+          extras: JSON.stringify([data.description].filter(Boolean).map(String)),
         });
 
         if (data.last) {

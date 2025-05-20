@@ -29,16 +29,16 @@ limiting product variety while still displaying only actual offers that the inte
 
 ### Minimum Requirements
 
-1. Robust handling of API failures or delays.
-2. Make sure to provide useful sorting and filtering options.
+1. Robust handling of API failures or delays. //done
+2. Make sure to provide useful sorting and filtering options. //done
 3. Your application should include a share link feature that allows users to share the results page with others via platforms like WhatsApp. Even if a provider is down, the share links should still direct users to the shared offers.
-4. Credentials of the provider APIs should NEVER be leaked to the user.
+4. Credentials of the provider APIs should NEVER be leaked to the user. // done
 
 ### Optional Features
 
-- Address autocompletion
-- Validation of customer Input
-- Session state to remember the user's last search
+- Address autocompletion //done
+- Validation of customer Input //done
+- Session state to remember the user's last search // done
 
 ### Getting Started
 

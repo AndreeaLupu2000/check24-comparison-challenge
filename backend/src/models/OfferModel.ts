@@ -4,10 +4,10 @@ export interface Offer {
   provider: string;
   productId: string;
   title: string;
-  speedMbps: number;
-  pricePerMonth: number;
-  durationMonths: number;
+  speedMbps: string;
+  pricePerMonth: string;
+  durationMonths: string;
   connectionType: string;
-  extras?: string[];
+  extras: string;
 }
 

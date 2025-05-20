@@ -1,12 +1,12 @@
-import { AddressDto } from "./AddressDto";
-import { OfferDto } from "./OfferDto";
+import { AddressInputDto } from "./AddressDto";
 
 export interface ShareDto {
     id: string;
     userId: string;
-    address: AddressDto;
-    offers: OfferDto[];
-    createdAt: Date;
+    address: AddressInputDto | string;
+    offerIds: string[];
+    offers: string[];
+    createdAt: string;
 }
 
 export type CreateShareDto = Omit<ShareDto, 'id' | 'createdAt'>;

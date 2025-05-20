@@ -1,231 +1,348 @@
-// src/views/SearchView.tsx
-import { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { OfferDto } from "../types/OfferDto";
-import { useAddress } from "../context/AddressContext";
-import { streamOffers } from "../api/offerService";
-import OfferCard from "../components/OfferCard";
-import Icon from "../assets/icon.png";
-import { createSharedOffer } from "../api/shareService";
-import { getAllUsers } from "../api/userService";
-import { useAuth } from "../context/AuthContext";
-import AddressComponent from "../components/AddressComponent";
+import { useState, useEffect, useRef } from "react"
+import { useLocation, useNavigate } from "react-router-dom"
+import { OfferDto } from "../types/OfferDto"
+import { useAddress } from "../context/AddressContext"
+import {streamOffers } from "../api/offerService"
+import OfferCard from "../components/OfferCard"
+import Icon from "../assets/icon.png"
+import { createSharedOffer } from "../api/shareService"
+import { useAuth } from "../context/AuthContext"
+import AddressComponent from "../components/AddressComponentWrapper";
+import { createAddress } from "../api/addressService"
+import { createUserAddress } from "../api/userAddressService"
+import OfferCardDetailModal from "../components/OfferCardDetailModal";
+import OfferFilter from "../components/OfferFilterComponent";
 
-/**
- * SearchView Component
- *
- * Main component for handling address search and displaying internet provider offers.
- * Implements address validation, autocomplete, history management, and offer streaming.
- */
 const SearchView = () => {
-  // Context and Primary State Management
-  const { address, setAddress } = useAddress();
-  const [offers, setOffers] = useState<OfferDto[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [isStreaming, setIsStreaming] = useState(false);
+  // Context of the current address
+  const { address, setAddress } = useAddress()
 
-  // Sorting Configuration
+  // Context of the current user
+  const { user } = useAuth()
+
+  // Local state for all offers
+  const [offers, setOffers] = useState<OfferDto[]>([])
+
+  // Local state for loading
+  const [loading, setLoading] = useState(false)
+
+  // Local state for streaming
+  const [isStreaming, setIsStreaming] = useState(false)
+  const [canShare, setCanShare] = useState(false)
+
+  // Local state for the share ID
+  const [shareId, setShareId] = useState<string | null>(null)
+
+  // Local state for sorting
   const [sortBy, setSortBy] = useState<
     | "price low to high"
     | "price high to low"
     | "speed high to low"
     | "speed low to high"
     | undefined
-  >(undefined);
+  >(undefined)
 
-  // Share Management
-  const [shareId, setShareId] = useState<string | null>(null);
+  // Navigation to other views
+  const navigate = useNavigate()
 
-  // Authentication Context
-  const { email } = useAuth();
+  // Location of the current view
+  // const location = useLocation()
 
-  // Temporary Storage for Streaming Offers
-  const offersArray: OfferDto[] = [];
+  // Local state for the offers reference
+  const offersRef = useRef<OfferDto[]>([])
+  const offerStringRef = useRef<string[]>([])
 
-  // Router Utilities
-  const location = useLocation();
-  const navigate = useNavigate();  
+  // Local state for the selected offer
+  const [selectedOffer, setSelectedOffer] = useState<OfferDto | null>(null);
 
-  /**
-   * Handle initial address loading and auto-search
-   * Processes URL parameters and stored addresses
-   */
+  // Local state for showing the filter
+  const [showFilter, setShowFilter] = useState(false);
+
+  // Local state for filtered offers
+  const [filteredOffers, setFilteredOffers] = useState<OfferDto[]>([]);
+
+  // Local state for address errors
+  const [addressErrors, setAddressErrors] = useState<{
+    plz?: string;
+    city?: string;
+    street?: string;
+    houseNumber?: string;
+  }>({});
+  
+
+
+  // Auto-load address from URL or localStorage. It applies automatically the address and searches for offers.
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
+    const params = new URLSearchParams(location.search)
+    const street = params.get("street") || ""
+    const houseNumber = params.get("houseNumber") || ""
+    const city = params.get("city") || ""
+    const plz = params.get("plz") || ""
 
-    const street = params.get("street") || "";
-    const houseNumber = params.get("houseNumber") || "";
-    const city = params.get("city") || "";
-    const plz = params.get("plz") || "";
+    setCanShare(false)    
 
     const hasSearchParams = ["street", "houseNumber", "city", "plz"].some(
       (param) => params.get(param) !== null
-    );
-
-    if (!hasSearchParams) {
-      const storedAddress = localStorage.getItem("address");
-
-      if (storedAddress) {
-        const parsedAddress = JSON.parse(storedAddress);
-        setAddress(parsedAddress);
-        onSearch(); // Auto-trigger search for remembered address
-      }
-    }
+    )
 
     if (hasSearchParams) {
-      setAddress({ street, houseNumber, city, plz, countryCode: "DE" });
-      onSearch(); // auto-search for shared links
+      setAddress({
+        street,
+        houseNumber,
+        city,
+        plz,
+        countryCode: "DE"
+      })
+    } else {
+      const storedAddress = localStorage.getItem("address")
+      if (storedAddress) {
+        const parsed = JSON.parse(storedAddress)
+        setAddress(parsed)
+      }
     }
-  }, []);
+  }, [])
+  
 
-  /**
-   * Main search handler
-   * Validates address and initiates offer streaming
-   */
+  // Handles incoming offers one at a time during streaming
+  const handleNewOffer = (offer: OfferDto) => {
+    offersRef.current.push(offer)
+    offerStringRef.current.push(JSON.stringify(offer))
+
+    setOffers((prev) => [...prev, offer])
+    setLoading(false)
+  }
+
+  // Share offers by saving them and generating a WhatsApp share link
+  const createSharedLink = async () => {
+    try {
+      const share = await createSharedOffer({
+        userId: user.id,
+        address: JSON.stringify(address),
+        offers: offerStringRef.current,
+        offerIds: [],
+      });
+  
+      const shareUrl = `${window.location.origin}/share/${share.id}`;
+      setShareId(share.id);
+  
+     
+      window.open(
+        `https://wa.me/?text=${encodeURIComponent(`Check out these offers: ${shareUrl}`)}`,
+        "_blank"
+      );
+  
+      navigate(
+        `/search?street=${encodeURIComponent(address.street)}&houseNumber=${encodeURIComponent(
+          address.houseNumber
+        )}&city=${encodeURIComponent(address.city)}&plz=${encodeURIComponent(address.plz)}`
+      );
+    } catch (err) {
+      console.error("Failed to create share link", err);
+    }
+  };
+  
+  
+
+  // Validates the address using Google's Address Validation API
+  const validateAddressWithGoogle = async (
+    addr: typeof address,
+    setAddressErrors: React.Dispatch<React.SetStateAction<typeof addressErrors>>
+  ): Promise<boolean> => {
+    // Get the API key from the environment variables
+    const apiKey = import.meta.env.VITE_GOOGLE_PLACE_API;
+  
+    // Create the payload for the Google Address Validation API
+    const payload = {
+      address: {
+        regionCode: "DE",
+        locality: addr.city,
+        postalCode: addr.plz,
+        addressLines: [`${addr.street} ${addr.houseNumber}`]
+      }
+    };
+  
+    try {
+      // Send the payload to the Google Address Validation API
+      const res = await fetch(
+        `https://addressvalidation.googleapis.com/v1:validateAddress?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        }
+      );
+  
+      // Get the response from the Google Address Validation API
+      const data = await res.json();
+  
+      // Get the address components from the response
+      const components = data.result?.address?.addressComponents || [];
+  
+      // Track missing fields
+      const missingFields: Partial<typeof addressErrors> = {};
+  
+      const getConfirmation = (type: string) =>
+        components.find(c => c.componentType === type)?.confirmationLevel;
+  
+      // Check if the house number is confirmed
+      if (getConfirmation("street_number") !== "CONFIRMED") {
+        missingFields.houseNumber = "House Number is invalid.";
+      }
+
+      // Check if the street is confirmed
+      if (getConfirmation("route") !== "CONFIRMED") {
+        missingFields.street = "Street is invalid.";
+      }
+
+      // Check if the city is confirmed
+      if (getConfirmation("locality") !== "CONFIRMED") {
+        missingFields.city = "City is invalid.";
+      }
+  
+      // Check if the postal code is confirmed
+      if (getConfirmation("postal_code") !== "CONFIRMED") {
+        missingFields.plz = "Postal Code is invalid.";
+      }
+
+      // Set field-specific errors
+      setAddressErrors(prev => ({ ...prev, ...missingFields }));
+  
+      // Return true if no errors, false otherwise
+      return Object.keys(missingFields).length === 0;
+    } catch (err) {
+      console.error("Google Address Validation API failed:", err);
+      return false;
+    }
+  };
+  
+  
+  
+  // Triggers the search process for offers
   const onSearch = async () => {
-    // Input validation
-    if (
-      !address.street ||
-      !address.houseNumber ||
-      !address.city ||
-      !address.plz
-    ) {
-      alert("Please fill in all address fields");
+    const newErrors: typeof addressErrors = {};
+
+    // Check if any field is empty or undefined
+    if (!address.plz?.trim()) newErrors.plz = "Please enter the PLZ.";
+    if (!address.city?.trim()) newErrors.city = "Please enter the city.";
+    if (!address.street?.trim()) newErrors.street = "Please enter the street.";
+    if (!address.houseNumber?.trim()) newErrors.houseNumber = "Please enter the number.";
+
+    // Set initial errors for empty fields
+    setAddressErrors(newErrors);
+
+    // If any field is empty, stop here
+    if (Object.keys(newErrors).length > 0) {
       return;
     }
 
-    // Save valid address to localStorage
-    localStorage.setItem("address", JSON.stringify(address));
+    // Only proceed with Google validation if all fields are filled
+    const isValid = await validateAddressWithGoogle(address, setAddressErrors);
+    if (!isValid) {
+      return;
+    }
 
-    // Initialize search
-    setOffers([]);
-    setLoading(true);
-    setIsStreaming(true);
+    // If we get here, both validations passed, proceed with the search
+    // 1. Store the address and get back the created address with its ID
+    const savedAddress = await createAddress({
+      street: address.street,
+      houseNumber: address.houseNumber,
+      city: address.city,
+      plz: address.plz,
+      countryCode: address.countryCode || "DE"
+    })
 
-    // Stream offers and handle results
+    // 2. Save relation to user (UserAddressDto)
+    await createUserAddress({
+      userId: user.id, 
+      addressId: savedAddress.$id // also a number
+    })
+
+    // Save the address to localStorage
+    localStorage.setItem("address", JSON.stringify(address))
+
+    // Clear and reset offers
+    offersRef.current = [] 
+    offerStringRef.current = []
+    setOffers([])
+    setLoading(true)
+    setIsStreaming(true)
+
+    // Start streaming new offers from the APIs
     streamOffers(
-      address,
+      { ...address, countryCode: address.countryCode || "DE" },
       handleNewOffer,
       handleStreamComplete,
       handleStreamError
-    );
-  };
+    )
+  }
 
-  /**
-   * Handle incoming offers during streaming
-   */
-  const handleNewOffer = (offer: OfferDto) => {
-    setOffers((prev) => {
-      const updatedOffers = [...prev, offer];
-      offersArray.push(offer);
-      return updatedOffers;
-    });
-    setLoading(false);
-  };
-
-  /**
-   * Handle stream completion
-   */
+  // Handles the completion of the streaming process
   const handleStreamComplete = async () => {
-    setLoading(false);
-    setIsStreaming(false);
 
-    const getUserId = async () => {
-      const users = await getAllUsers();
-      if (users.length > 0) {
-        for (const user of users) {
-          if (user.email === email) {
-            return user.id.toString();
-          }
-        }
-      }
-      return "";
-    };
+    // Stop streaming and update loading state
+    setLoading(false)
+    setIsStreaming(false)
+    setCanShare(true)
 
-    const userId = await getUserId();
+    // Use AuthContext to get user ID directly
+    if (!user.id) {
+      console.warn("No user ID available for sharing")
+      return
+    }
+  }
 
-    createSharedOffer({
-      userId: userId,
-      address,
-      offers: offersArray,
-    })
-      .then((share) => {
-        setShareId(share.id);
-        const shareUrl = `${window.location.origin}/share/${share.id}`;
-        console.log(shareUrl);
-      })
-      .catch((err) => {
-        console.error("Failed to create share link", err);
-      });
-
-    navigate(
-      `/search?street=${encodeURIComponent(
-        address.street
-      )}&houseNumber=${encodeURIComponent(
-        address.houseNumber
-      )}&city=${encodeURIComponent(address.city)}&plz=${encodeURIComponent(
-        address.plz
-      )}`
-    );
-  };
-
-  /**
-   * Handle stream error
-   */
+  // Handles errors during the streaming process
   const handleStreamError = () => {
-    setLoading(false);
-    setIsStreaming(false);
+    setLoading(false)
+    setIsStreaming(false)
+  }
+
+  // Decide how to show the offers
+  const baseList = filteredOffers.length > 0 ? filteredOffers : offers;
+
+  // Sort the offers based on the selected sorting option
+  const displayOffers = sortBy
+    ? [...baseList].sort((a, b) => {
+        if (sortBy === "price low to high")
+          return parseFloat(a.pricePerMonth) - parseFloat(b.pricePerMonth);
+        if (sortBy === "price high to low")
+          return parseFloat(b.pricePerMonth) - parseFloat(a.pricePerMonth);
+        if (sortBy === "speed high to low")
+          return parseFloat(b.speedMbps) - parseFloat(a.speedMbps);
+        if (sortBy === "speed low to high")
+          return parseFloat(a.speedMbps) - parseFloat(b.speedMbps);
+        return 0;
+      })
+    : baseList;
+
+
+  // Clear error when field is changed
+  const handleFieldChange = (field: keyof typeof addressErrors) => {
+    setAddressErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
-  // Sort offers
-  const sortedOffers = sortBy
-    ? [...offers].sort((a, b) => {
-        if (sortBy === "price low to high") {
-          return a.pricePerMonth - b.pricePerMonth;
-        } else if (sortBy === "price high to low") {
-          return b.pricePerMonth - a.pricePerMonth;
-        } else if (sortBy === "speed high to low") {
-          return b.speedMbps - a.speedMbps;
-        } else {
-          return a.speedMbps - b.speedMbps;
-        }
-      })
-    : offers;
 
-  // Share URL
-  const shareUrl = shareId
-    ? `${window.location.origin}/share/${shareId}`
-    : `${window.location.origin}/search?street=${encodeURIComponent(
-        address.street
-      )}&houseNumber=${encodeURIComponent(
-        address.houseNumber
-      )}&city=${encodeURIComponent(address.city)}&plz=${encodeURIComponent(
-        address.plz
-      )}`;
-
+  // ------------------------ JSX: Search View Layout ------------------------
   return (
     <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="w-full py-6 mb-8 mt-10">
+        {/* ------------------ Logo and title ------------------ */}
         <div className="flex justify-center items-center gap-6 max-w-6xl mx-auto px-4">
-          {/* Logo */}
           <img src={Icon} alt="GenDevNet Logo" className="w-32 h-auto" />
-
-          {/* Title */}
-          <h1 className="text-5xl font-bold leading-[3.5rem] text-gray-800">
-            GenDevNet
-          </h1>
+          <h1 className="text-5xl font-bold leading-[3.5rem] text-gray-800">GenDevNet</h1>
         </div>
       </div>
 
       <div className="bg-white p-6 rounded-md shadow-md mb-8">
-        <h1 className="text-2xl font-bold mb-6 text-center">
-          Search Internet Providers
-        </h1>
-        
-        {/* Address Component */}
-        <AddressComponent/>
+        {/* ------------------ Search title ------------------ */}
+        <h1 className="text-2xl font-bold mb-6 text-center">Search Internet Providers</h1>
 
-        {/* Search and Share Buttons - Updated styling */}
+        {/* ------------------ Address component ------------------ */}
+        <AddressComponent errors={addressErrors} onFieldChange={handleFieldChange} />
+
+        {/* ------------------ Search button ------------------ */}
         <div className="flex justify-center gap-4 mt-2">
           <button
             onClick={onSearch}
@@ -233,83 +350,100 @@ const SearchView = () => {
           >
             Search
           </button>
+
+        {/* ------------------ Share button ------------------ */}
           <button
-            onClick={() =>
-              window.open(
-                `https://wa.me/?text=${encodeURIComponent(
-                  `Check out these offers: ${shareUrl}`
-                )}`,
-                "_blank"
-              )
-            }
-            className="w-full max-w-[200px] bg-green-500 text-white px-6 py-3 rounded-md hover:bg-green-600 text-lg font-medium transition-colors duration-200"
+            disabled={!canShare}
+            className={`w-full max-w-[200px] text-white px-6 py-3 rounded-md text-lg font-medium transition-colors duration-200 ${
+              canShare
+              ? 'bg-green-500 hover:bg-green-600' 
+              : 'bg-gray-400 cursor-not-allowed'
+            }`}
+            onClick={() => {
+              if (canShare) {
+                createSharedLink()
+              }
+            }}
           >
             Share
           </button>
         </div>
       </div>
 
-      {/* Sort Dropdown */}
-      <div className="flex justify-end mb-4">
-        <label className="mr-2 text-sm font-medium text-gray-700 self-center">
-          Sort by:
-        </label>
-        <select
-          value={sortBy ?? ""}
-          onChange={(e) =>
-            setSortBy(
-              e.target.value === "price low to high" ||
-                e.target.value === "price high to low" ||
-                e.target.value === "speed high to low" ||
-                e.target.value === "speed low to high"
-                ? (e.target.value as
-                    | "price low to high"
-                    | "price high to low"
-                    | "speed high to low"
-                    | "speed low to high")
-                : undefined
-            )
-          }
+      <div className="flex justify-between items-center mb-4 gap-4 flex-wrap">
+        {/* ------------------ Filter Toggle Button ------------------ */}
+        <button
           className="px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          onClick={() => setShowFilter(prev => !prev)}
         >
-          <option value="">Select Sorting</option>
-          <option value="price low to high">Price (Low to High)</option>
-          <option value="price high to low">Price (High to Low)</option>
-          <option value="speed high to low">Speed (High to Low)</option>
-          <option value="speed low to high">Speed (Low to High)</option>
-        </select>
+          {showFilter ? "Hide Filters" : "Show Filters"}
+        </button>
+
+        {/* ------------------ Sort Selector ------------------ */}
+        <div className="flex items-center">
+          <label className="mr-2 text-sm font-medium text-gray-700 self-center">Sort by:</label>
+          <select
+            value={sortBy ?? ""}
+            onChange={(e) =>
+              setSortBy(
+                [
+                  "price low to high",
+                  "price high to low",
+                  "speed high to low",
+                  "speed low to high"
+                ].includes(e.target.value)
+                  ? (e.target.value as typeof sortBy)
+                  : undefined
+              )
+            }
+            className="px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            <option value="">Select Sorting</option>
+            <option value="price low to high">Price (Low to High)</option>
+            <option value="price high to low">Price (High to Low)</option>
+            <option value="speed high to low">Speed (High to Low)</option>
+            <option value="speed low to high">Speed (Low to High)</option>
+          </select>
+        </div>
       </div>
 
-      {/* Offers Display */}
+      {/* ------------------ Filter component ------------------ */}
+      {showFilter && (
+        <OfferFilter offers={offers} onFilter={setFilteredOffers} />
+      )}
+
+      {/* ------------------ Loading indicator ------------------ */}
       {loading && offers.length === 0 ? (
         <div className="flex justify-center items-center min-h-[30vh]">
           <div className="h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
-      ) : sortedOffers.length > 0 ? (
+      ) : displayOffers.length > 0 ? (
         <div className="space-y-4">
-          {sortedOffers.map((offer, index) => (
-            <OfferCard key={index} offer={offer} onView={() => {}} />
+          {/* ------------------ Offer cards ------------------ */}
+          {displayOffers.map((offer, index) => (
+            <OfferCard key={index} offer={offer} onView={() => setSelectedOffer(offer)} />
           ))}
 
-          {/* Show loading indicator at bottom while streaming */}
+          {/* ------------------ Loading more results ------------------ */}
           {isStreaming && (
             <div className="flex justify-center items-center py-4">
               <div className="h-6 w-6 border-3 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-              <span className="ml-2 text-gray-600">
-                Loading more results...
-              </span>
+              <span className="ml-2 text-gray-600">Loading more results...</span>
             </div>
           )}
         </div>
       ) : (
         <div className="text-center text-gray-500 mt-6">
-          {isStreaming
-            ? "Searching for offers..."
-            : "No offers available for this address."}
+          {isStreaming ? "Searching for offers..." : "No offers available for this address."}
         </div>
       )}
-    </div>
-  );
-};
 
-export default SearchView;
+      {/* ------------------ Offer card detail modal ------------------ */}
+      {selectedOffer && (
+        <OfferCardDetailModal offer={selectedOffer} onClose={() => setSelectedOffer(null)} />
+      )}
+    </div>
+  )
+}
+
+export default SearchView

@@ -1,47 +1,78 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext } from 'react'
+import { UserDto } from '../types/UserDto'
 
+// Exclude password from context
+type AuthUser = Omit<UserDto, 'password'>
+
+/**
+ * AuthContextType interface
+ * @param user - The user to display
+ * @param setUser - The function to call when the user is set
+ * @param clearUser - The function to call when the user is cleared
+ */
 interface AuthContextType {
-  email: string;
-  setEmail: (email: string) => void;
-  password: string;
-  setPassword: (password: string) => void;
+  user: AuthUser
+  setUser: (user: AuthUser) => void
+  clearUser: () => void
 }
 
+/**
+ * Default user
+ * @param id - The id of the user
+ * @param email - The email of the user
+ */
+const defaultUser: AuthUser = {
+  id: '',
+  email: ''
+}
+
+/**
+ * AuthContext
+ * @param user - The user to display
+ * @param setUser - The function to call when the user is set
+ * @param clearUser - The function to call when the user is cleared
+ */
 const AuthContext = createContext<AuthContextType>({
-  email: '',
-  setEmail: () => {},
-  password: '',
-  setPassword: () => {}
-});
+  user: defaultUser,
+  setUser: () => {},
+  clearUser: () => {}
+})
 
+/**
+ * AuthContextProvider component
+ * @param children - The children to display
+ * @returns The AuthContextProvider component
+ */
 export const AuthContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [email, setEmail] = useState(() => localStorage.getItem('email') || '');
-  const [password, setPassword] = useState(() => localStorage.getItem('password') || '');
 
-  // Wrap setCode to also update localStorage
-  const setEmailWithStorage = (newEmail: string) => {
-    localStorage.setItem('email', newEmail);
-    setEmail(newEmail);
-  };
+  // State for the user
+  const [user, setUserState] = useState<AuthUser>(() => {
+    const stored = localStorage.getItem('user')
+    return stored ? JSON.parse(stored) : defaultUser
+  })
 
-  // Wrap setUserId to also update localStorage
-  const setPasswordWithStorage = (newPassword: string) => {
-    localStorage.setItem('password', newPassword);
-    setPassword(newPassword);
-  };
+  // Set the user
+  const setUser = (user: AuthUser) => {
+    localStorage.setItem('user', JSON.stringify(user))
+    setUserState(user)
+  }
 
+  // Clear the user
+  const clearUser = () => {
+    localStorage.removeItem('user')
+    setUserState(defaultUser)
+  }
+
+  // Return the AuthContextProvider component
   return (
-    <AuthContext.Provider 
-      value={{ 
-        email, 
-        setEmail: setEmailWithStorage,
-        password,
-        setPassword: setPasswordWithStorage
-      }}
-    >
+    <AuthContext.Provider value={{ user, setUser, clearUser }}>
       {children}
     </AuthContext.Provider>
-  );
-};
+  )
+}
 
-export const useAuth = () => useContext(AuthContext);
+/**
+ * useAuth hook
+ * @returns The useAuth hook
+ */
+export const useAuth = () => useContext(AuthContext)

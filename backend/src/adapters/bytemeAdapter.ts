@@ -62,11 +62,15 @@ export const ByteMeAdapter: ProviderAdapter = {
         provider: "ByteMe",
         productId: row.productId,
         title: `${row.providerName.trim()} ${row.speed} Internet`,
-        speedMbps: parseInt(row.speed) || 0,
-        pricePerMonth: parseInt(row.monthlyCostInCent) / 100 || 0,
-        durationMonths: parseInt(row.durationInMonths) || 24,
+        speedMbps: row.speed || "0",
+        pricePerMonth: (parseInt(row.monthlyCostInCent) / 100).toString(),
+        durationMonths: row.durationInMonths || "24",
         connectionType: row.connectionType,
-        extras: [row.tv, row.installationService, row.voucherType].filter(Boolean)
+        extras: JSON.stringify([
+          `TV: ${row.tv}`,
+          `Installation Service: ${row.installationService}`,
+          `Discount: ${row.voucherType}`
+        ].filter(Boolean).map(String)),
       }));
 
       // Keep only unique offers

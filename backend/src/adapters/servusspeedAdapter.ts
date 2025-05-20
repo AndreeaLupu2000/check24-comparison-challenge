@@ -108,17 +108,17 @@ export const ServusSpeedAdapter: ProviderAdapter = {
               provider: "Servus Speed",
               productId,
               title: d.providerName,
-              speedMbps: d.productInfo.speed,
-              pricePerMonth: d.pricingDetails.monthlyCostInCent / 100,
-              durationMonths: d.productInfo.contractDurationInMonths,
-              connectionType: d.productInfo.connectionType,
-              extras: [
+              speedMbps: d.productInfo.speed.toString(),
+              pricePerMonth: (d.pricingDetails.monthlyCostInCent / 100).toString(),
+              durationMonths: d.productInfo.contractDurationInMonths.toString(),
+              connectionType: d.productInfo.connectionType.toString(),
+              extras: JSON.stringify([
                 `TV: ${d.productInfo.tv}`,
                 `Max age: ${d.productInfo.maxAge}`,
                 `Limit from: ${d.productInfo.limitFrom}`,
                 `Discount: €${(d.discount / 100).toFixed(2)}`,
                 d.pricingDetails.installationService ? "Includes installation service" : "No installation"
-              ]
+              ].filter(Boolean).map(String)),
             } as Offer;
 
           } catch {
