@@ -125,13 +125,11 @@ const SharedView = () => {
         plz,
         countryCode: "DE"
       })
-      onSearch()
     } else {
       const storedAddress = localStorage.getItem("address")
       if (storedAddress) {
         const parsed = JSON.parse(storedAddress)
         setAddress(parsed)
-        onSearch()
       }
     }
   }, [])

@@ -45,7 +45,7 @@ const SearchView = () => {
   const navigate = useNavigate()
 
   // Location of the current view
-  const location = useLocation()
+  // const location = useLocation()
 
   // Local state for the offers reference
   const offersRef = useRef<OfferDto[]>([])
@@ -58,8 +58,6 @@ const SearchView = () => {
 
   // Local state for filtered offers
   const [filteredOffers, setFilteredOffers] = useState<OfferDto[]>([]);
-
-  const [shareUrl, setShareUrl] = useState<string | null>(null);
 
   // Local state for address errors
   const [addressErrors, setAddressErrors] = useState<{
@@ -91,13 +89,11 @@ const SearchView = () => {
         plz,
         countryCode: "DE"
       })
-      onSearch()
     } else {
       const storedAddress = localStorage.getItem("address")
       if (storedAddress) {
         const parsed = JSON.parse(storedAddress)
         setAddress(parsed)
-        onSearch()
       }
     }
   }, [])
