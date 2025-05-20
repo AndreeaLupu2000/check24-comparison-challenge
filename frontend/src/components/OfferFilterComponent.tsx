@@ -1,19 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { OfferDto } from '../types/OfferDto';
 
+// Define the props for the OfferFilter component
 interface OfferFilterProps {
   offers: OfferDto[];
   onFilter: (filtered: OfferDto[]) => void;
 }
 
 const OfferFilter: React.FC<OfferFilterProps> = ({ offers, onFilter }) => {
+  // Local states for filter values
   const [provider, setProvider] = useState<string>('');
   const [minSpeed, setMinSpeed] = useState<number>(0);
   const [maxPrice, setMaxPrice] = useState<number>(Infinity);
   const [duration, setDuration] = useState<number | ''>('');
 
+  // Unique providers from all offers
   const uniqueProviders = Array.from(new Set(offers.map(o => o.provider)));
 
+  // Effect to filter offers based on current filter values
   useEffect(() => {
     const filtered = offers.filter((o) => {
       const matchesProvider = provider ? o.provider === provider : true;
@@ -27,12 +31,13 @@ const OfferFilter: React.FC<OfferFilterProps> = ({ offers, onFilter }) => {
     onFilter(filtered);
   }, [provider, minSpeed, maxPrice, duration, offers]);
 
+  // ------------------------ JSX: Offer Filter Layout ------------------------
   return (
     <div className="bg-white rounded-md p-4 shadow-sm mb-6">
       <h3 className="text-lg font-semibold mb-3">Filter Offers</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 
-        {/* Provider */}
+        {/* ------------------ Provider Filter ------------------ */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Provider</label>
           <select
@@ -47,7 +52,7 @@ const OfferFilter: React.FC<OfferFilterProps> = ({ offers, onFilter }) => {
           </select>
         </div>
 
-        {/* Speed */}
+        {/* ------------------ Min Speed Filter ------------------ */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Min Speed (Mbps)</label>
           <input
@@ -59,7 +64,7 @@ const OfferFilter: React.FC<OfferFilterProps> = ({ offers, onFilter }) => {
           />
         </div>
 
-        {/* Max Price */}
+        {/* ------------------ Max Price Filter ------------------ */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Max Price (€)</label>
           <input
@@ -71,7 +76,7 @@ const OfferFilter: React.FC<OfferFilterProps> = ({ offers, onFilter }) => {
           />
         </div>
 
-        {/* Duration */}
+        {/* ------------------ Duration Filter ------------------ */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Duration (Months)</label>
           <input

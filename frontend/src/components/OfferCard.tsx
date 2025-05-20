@@ -6,12 +6,16 @@ import PingPerfect from '../assets/pingperfect.png';
 import ServusSpeed from '../assets/servusspeed.png';
 import VerbynDich from '../assets/verbyndich.png';
 
+// Define the props for the OfferCard component
 interface OfferCardProps {
   offer: OfferDto;
   onView: (offer: OfferDto) => void;
 }
 
+// OfferCard component displays a single internet offer
 const OfferCard = ({ offer, onView }: OfferCardProps) => {
+
+  // Helper function to return the correct logo image based on provider name
   const getProviderImage = (provider: string) => {
     switch (provider.toLowerCase()) {
       case 'byteme':
@@ -27,11 +31,13 @@ const OfferCard = ({ offer, onView }: OfferCardProps) => {
     }
   };
 
+  // ------------------------ JSX: Offer Card Layout ------------------------
   return (
     <div
       onClick={() => onView(offer)}
       className="rounded-lg bg-white shadow-md p-5 hover:shadow-xl transition cursor-pointer"
     >
+      {/* ------------------ Provider logo ------------------ */}
       <div className="flex items-start gap-4">
         <img 
           src={getProviderImage(offer.provider)} 
@@ -39,6 +45,7 @@ const OfferCard = ({ offer, onView }: OfferCardProps) => {
           className="relative w-24 h-24 object-contain rounded-lg"
         />
         <div className="flex-1">
+          {/* ------------------ Provider title and price ------------------ */}
           <div className="flex justify-between items-start mb-2">
             <div>
               <h3 className="text-lg font-semibold text-gray-800">{offer.title}</h3>
@@ -46,6 +53,8 @@ const OfferCard = ({ offer, onView }: OfferCardProps) => {
             </div>
             <div className="text-sm font-semibold text-blue-600">{offer.pricePerMonth} €</div>
           </div>
+
+          {/* ------------------ Speed and duration ------------------ */}
           <div className="text-sm text-gray-700">Speed: {offer.speedMbps} Mbps</div>
           <div className="text-sm text-gray-700">Duration: {offer.durationMonths} months</div>
         </div>
