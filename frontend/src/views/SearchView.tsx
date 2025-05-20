@@ -49,6 +49,7 @@ const SearchView = () => {
 
   // Local state for the offers reference
   const offersRef = useRef<OfferDto[]>([])
+  const offerStringRef = useRef<string[]>([])
 
   // Local state for the selected offer
   const [selectedOffer, setSelectedOffer] = useState<OfferDto | null>(null);
@@ -102,6 +103,8 @@ const SearchView = () => {
   // Handles incoming offers one at a time during streaming
   const handleNewOffer = (offer: OfferDto) => {
     offersRef.current.push(offer)
+    offerStringRef.current.push(JSON.stringify(offer))
+    console.log(offerStringRef.current)
     setOffers((prev) => [...prev, offer])
     setLoading(false)
   }
@@ -112,7 +115,7 @@ const SearchView = () => {
   // Share offers by saving them and generating a WhatsApp share link
   const createSharedLink = async () => {
     try {
-      const offerCreationPromises = offersRef.current.map(async (offer) => {
+      /*const offerCreationPromises = offersRef.current.map(async (offer) => {
         const savedOffer = await createOffer({
           ...offer,
           speedMbps: String(offer.speedMbps),
@@ -126,13 +129,14 @@ const SearchView = () => {
         return savedOffer.$id;
       });
   
-      const offerIds = await Promise.all(offerCreationPromises);
+      const offerIds = await Promise.all(offerCreationPromises);*/
 
 
       const share = await createSharedOffer({
         userId: user.id,
         address: JSON.stringify(address),
-        offerIds,
+        offers: offerStringRef.current,
+        offerIds: [],
       });
   
       const shareUrl = `${window.location.origin}/share/${share.id}`;
@@ -279,6 +283,7 @@ const SearchView = () => {
 
     // Clear and reset offers
     offersRef.current = [] 
+    offerStringRef.current = []
     setOffers([])
     setLoading(true)
     setIsStreaming(true)

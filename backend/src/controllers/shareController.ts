@@ -15,7 +15,7 @@ const PAGE_LIMIT = 25
  * Create a shared offer
  */
 export const createSharedOffer = asyncHandler(async (req: Request, res: Response) => {
-  const { userId, address, offerIds } = req.body
+  const { userId, address, offerIds, offers } = req.body
 
   if (!userId || !address || !offerIds) {
      res.status(400).json({ error: "Missing userId, address, or offerIds" })
@@ -32,6 +32,7 @@ export const createSharedOffer = asyncHandler(async (req: Request, res: Response
         userId,
         address: JSON.stringify(address),
         offerIds,
+        offers,
         createdAt: new Date().toISOString(),
       },
       [
@@ -46,6 +47,7 @@ export const createSharedOffer = asyncHandler(async (req: Request, res: Response
         userId: share.userId,
         address: JSON.parse(share.address),
         offerIds: share.offerIds,
+        offers: share.offers,
         createdAt: share.createdAt,
     })
   } catch (error) {
@@ -81,7 +83,7 @@ export const getSharedOffer = async (req: Request, res: Response) => {
  */
 export const updateSharedOffer = async (req: Request, res: Response) => {
   const { id } = req.params
-  const { userId, address, offerIds } = req.body
+  const { userId, address, offerIds, offers } = req.body
 
   if (!userId || !address || !offerIds) {
     return res.status(400).json({ error: "Missing userId, address, or offerIds" })
@@ -96,6 +98,7 @@ export const updateSharedOffer = async (req: Request, res: Response) => {
         userId,
         address: JSON.stringify(address),
         offerIds,
+        offers,
       },
       [
         Query.orderAsc("createdAt"),
@@ -147,6 +150,7 @@ export const getAllSharedOffers = async (_req: Request, res: Response) => {
       userId: doc.userId,
       address: JSON.parse(doc.address),
       offerIds: doc.offerIds,
+      offers: doc.offers,
       createdAt: doc.createdAt,
     }))
 

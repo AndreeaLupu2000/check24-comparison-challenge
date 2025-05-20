@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { OfferDto } from "../types/OfferDto";
 import { useAddress } from "../context/AddressContext";
-import { createOffer, getOfferById, streamOffers } from "../api/offerService";
+import { createOffer, streamOffers } from "../api/offerService";
 import OfferCard from "../components/OfferCard";
 import Icon from "../assets/icon.png";
 import { createSharedOffer } from "../api/shareService";
@@ -50,6 +50,7 @@ const SharedView = () => {
 
   // Local state for the offers reference
   const offersRef = useRef<OfferDto[]>([])
+  const offerStringRef = useRef<string[]>([])
 
   // Local state for the selected offer
   const [selectedOffer, setSelectedOffer] = useState<OfferDto | null>(null);
@@ -83,14 +84,15 @@ const SharedView = () => {
         setLoading(true);
 
         const share = await getSharedOffer(id);
-        
-        const offerIds = share.offerIds;
-        const offerPromises = offerIds.map((offerId: string) => getOfferById(offerId));
-        const results = await Promise.allSettled(offerPromises);
 
-        const validOffers = results
-          .filter((res): res is PromiseFulfilledResult<OfferDto> => res.status === "fulfilled")
-          .map((res) => res.value);
+        console.log(share)
+        
+        /*const offerIds = share.offerIds;
+        const offerPromises = offerIds.map((offerId: string) => getOfferById(offerId));
+        const results = await Promise.allSettled(offerPromises);*/
+
+        const validOffers = share.offers
+          .map((offer) => JSON.parse(offer))
 
         setOffers(validOffers);
       } catch (err) {
@@ -138,6 +140,7 @@ const SharedView = () => {
   // Handles incoming offers one at a time during streaming
   const handleNewOffer = (offer: OfferDto) => {
     offersRef.current.push(offer)
+    offerStringRef.current.push(JSON.stringify(offer))
     setOffers((prev) => [...prev, offer])
     setLoading(false)
   }
@@ -168,6 +171,7 @@ const SharedView = () => {
       const share = await createSharedOffer({
         userId: user.id,
         address: JSON.stringify(address),
+        offers: offerStringRef.current,
         offerIds,
       });
   
@@ -300,6 +304,7 @@ const SharedView = () => {
 
     // Clear and reset offers
     offersRef.current = [];
+    offerStringRef.current = [];
     setOffers([]);
     setLoading(true);
     setIsStreaming(true);

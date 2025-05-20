@@ -5,6 +5,7 @@ export interface ShareDto {
     userId: string;
     address: AddressInputDto | string;
     offerIds: string[];
+    offers: string[];
     createdAt: string;
 }
 
