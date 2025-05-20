@@ -41,7 +41,7 @@ const AddressComponent: React.FC<AddressComponentProps> = ({ errors = {}, onFiel
   
   // Auth context to get user info
   const { user } = useAuth();
-
+  
   // Refs for Google Maps services and input
   const autocompleteServiceRef = useRef<google.maps.places.AutocompleteService | null>(null)
   const geocoderRef = useRef<google.maps.Geocoder | null>(null)

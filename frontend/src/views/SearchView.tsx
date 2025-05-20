@@ -7,7 +7,7 @@ import OfferCard from "../components/OfferCard"
 import Icon from "../assets/icon.png"
 import { createSharedOffer } from "../api/shareService"
 import { useAuth } from "../context/AuthContext"
-import AddressComponent from "../components/AddressComponent"
+import AddressComponent from "../components/AddressComponentWrapper";
 import { createAddress } from "../api/addressService"
 import { createUserAddress } from "../api/userAddressService"
 import OfferCardDetailModal from "../components/OfferCardDetailModal";
@@ -58,6 +58,8 @@ const SearchView = () => {
 
   // Local state for filtered offers
   const [filteredOffers, setFilteredOffers] = useState<OfferDto[]>([]);
+
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
 
   // Local state for address errors
   const [addressErrors, setAddressErrors] = useState<{
@@ -114,7 +116,6 @@ const SearchView = () => {
   // Share offers by saving them and generating a WhatsApp share link
   const createSharedLink = async () => {
     try {
-      // 1. Persist only the displayed offers
       const offerCreationPromises = offersRef.current.map(async (offer) => {
         const savedOffer = await createOffer({
           ...offer,
@@ -123,41 +124,40 @@ const SearchView = () => {
           durationMonths: String(offer.durationMonths),
           extras: typeof offer.extras === "string" ? offer.extras : JSON.stringify(offer.extras),
         });
+  
+        await sleep(1000); 
 
-        await sleep(1000); // Small delay between request
-        
-        return savedOffer.$id; // Only need the Appwrite document ID
+        return savedOffer.$id;
       });
   
       const offerIds = await Promise.all(offerCreationPromises);
-  
-      // 2. Create share document with the collected Appwrite offer IDs
+
+
       const share = await createSharedOffer({
         userId: user.id,
         address: JSON.stringify(address),
         offerIds,
       });
   
+      const shareUrl = `${window.location.origin}/share/${share.id}`;
       setShareId(share.id);
   
-      const shareUrl = `${window.location.origin}/share/${share.id}`;
+     
+      window.open(
+        `https://wa.me/?text=${encodeURIComponent(`Check out these offers: ${shareUrl}`)}`,
+        "_blank"
+      );
   
-      // 3. Navigate to the search view with the current address
       navigate(
         `/search?street=${encodeURIComponent(address.street)}&houseNumber=${encodeURIComponent(
           address.houseNumber
         )}&city=${encodeURIComponent(address.city)}&plz=${encodeURIComponent(address.plz)}`
       );
-  
-      // 4. Open WhatsApp with link
-      window.open(
-        `https://wa.me/?text=${encodeURIComponent(`Check out these offers: ${shareUrl}`)}`,
-        "_blank"
-      );
     } catch (err) {
       console.error("Failed to create share link", err);
     }
-  };  
+  };
+  
   
 
   // Validates the address using Google's Address Validation API
@@ -334,15 +334,6 @@ const SearchView = () => {
       })
     : baseList;
 
-  // Generate the share URL
-  const shareUrl = shareId
-    ? `${window.location.origin}/share/${shareId}`
-    : `${window.location.origin}/search?street=${encodeURIComponent(
-        address.street
-      )}&houseNumber=${encodeURIComponent(address.houseNumber)}&city=${encodeURIComponent(
-        address.city
-      )}&plz=${encodeURIComponent(address.plz)}`
-
 
   // Clear error when field is changed
   const handleFieldChange = (field: keyof typeof addressErrors) => {
@@ -381,12 +372,6 @@ const SearchView = () => {
           <button
             onClick={() =>{
               createSharedLink()
-                window.open(
-                  `https://wa.me/?text=${encodeURIComponent(
-                    `Check out these offers: ${shareUrl}`
-                  )}`,
-                  "_blank"
-                )
               }
             }
             className="w-full max-w-[200px] bg-green-500 text-white px-6 py-3 rounded-md hover:bg-green-600 text-lg font-medium transition-colors duration-200"
