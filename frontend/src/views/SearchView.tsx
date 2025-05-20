@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { OfferDto } from "../types/OfferDto"
 import { useAddress } from "../context/AddressContext"
-import { createOffer, streamOffers } from "../api/offerService"
+import {streamOffers } from "../api/offerService"
 import OfferCard from "../components/OfferCard"
 import Icon from "../assets/icon.png"
 import { createSharedOffer } from "../api/shareService"
@@ -28,6 +28,7 @@ const SearchView = () => {
 
   // Local state for streaming
   const [isStreaming, setIsStreaming] = useState(false)
+  const [canShare, setCanShare] = useState(false)
 
   // Local state for the share ID
   const [shareId, setShareId] = useState<string | null>(null)
@@ -78,6 +79,8 @@ const SearchView = () => {
     const city = params.get("city") || ""
     const plz = params.get("plz") || ""
 
+    setCanShare(false)    
+
     const hasSearchParams = ["street", "houseNumber", "city", "plz"].some(
       (param) => params.get(param) !== null
     )
@@ -104,34 +107,14 @@ const SearchView = () => {
   const handleNewOffer = (offer: OfferDto) => {
     offersRef.current.push(offer)
     offerStringRef.current.push(JSON.stringify(offer))
-    console.log(offerStringRef.current)
+
     setOffers((prev) => [...prev, offer])
     setLoading(false)
   }
 
-  // Utility to pause between offer creations (helps with API rate limits)
-  const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
   // Share offers by saving them and generating a WhatsApp share link
   const createSharedLink = async () => {
     try {
-      /*const offerCreationPromises = offersRef.current.map(async (offer) => {
-        const savedOffer = await createOffer({
-          ...offer,
-          speedMbps: String(offer.speedMbps),
-          pricePerMonth: String(offer.pricePerMonth),
-          durationMonths: String(offer.durationMonths),
-          extras: typeof offer.extras === "string" ? offer.extras : JSON.stringify(offer.extras),
-        });
-  
-        await sleep(1000); 
-
-        return savedOffer.$id;
-      });
-  
-      const offerIds = await Promise.all(offerCreationPromises);*/
-
-
       const share = await createSharedOffer({
         userId: user.id,
         address: JSON.stringify(address),
@@ -193,8 +176,6 @@ const SearchView = () => {
   
       // Get the response from the Google Address Validation API
       const data = await res.json();
-
-      console.log(data)
   
       // Get the address components from the response
       const components = data.result?.address?.addressComponents || [];
@@ -303,6 +284,7 @@ const SearchView = () => {
     // Stop streaming and update loading state
     setLoading(false)
     setIsStreaming(false)
+    setCanShare(true)
 
     // Use AuthContext to get user ID directly
     if (!user.id) {
@@ -371,11 +353,17 @@ const SearchView = () => {
 
         {/* ------------------ Share button ------------------ */}
           <button
-            onClick={() =>{
-              createSharedLink()
+            disabled={!canShare}
+            className={`w-full max-w-[200px] text-white px-6 py-3 rounded-md text-lg font-medium transition-colors duration-200 ${
+              canShare
+              ? 'bg-green-500 hover:bg-green-600' 
+              : 'bg-gray-400 cursor-not-allowed'
+            }`}
+            onClick={() => {
+              if (canShare) {
+                createSharedLink()
               }
-            }
-            className="w-full max-w-[200px] bg-green-500 text-white px-6 py-3 rounded-md hover:bg-green-600 text-lg font-medium transition-colors duration-200"
+            }}
           >
             Share
           </button>

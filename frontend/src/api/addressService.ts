@@ -1,9 +1,20 @@
 import axios from 'axios';
 import { AddressInputDto } from '../types/AddressDto';
 
+// API URL for addresses
 const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_PLACE_API; // Replace with your actual API key
 
+// API URL for addresses
 const API = import.meta.env.VITE_BACKEND_API_URL + '/addresses';
+
+/**
+ * Validate an address
+ * @param street - The street name
+ * @param number - The house number
+ * @param postalCode - The postal code
+ * @param city - The city name
+ * @returns A boolean indicating if the address is valid
+ */
 export async function validateAddress(
   street: string,
   number: string,
@@ -16,8 +27,6 @@ export async function validateAddress(
 
   try {
 
-    console.log(url);
-    console.log(address);
     const response = await axios.get(url);
     const result = response.data;
 
@@ -35,11 +44,20 @@ export async function validateAddress(
   }
 }
 
+/**
+ * Create an address
+ * @param address - The address to create
+ * @returns The created address
+ */
 export const createAddress = async (address: AddressInputDto): Promise<AddressInputDto> => {
   const response = await axios.post(API, address);
   return response.data;
 }
 
+/**
+ * Get all addresses
+ * @returns An array of addresses
+ */
 export const getAllAddresses = async (): Promise<AddressInputDto[]> => {
   const response = await axios.get(API);
   return response.data;

@@ -201,11 +201,13 @@ const AddressComponent: React.FC<AddressComponentProps> = ({ errors = {}, onFiel
       })
     } else{
 
+      // Validate address fields
       const plzCheck = plz.length > 0? plz : ""
       const cityCheck = city.length > 0? city : ""
       const streetCheck = street.length > 0? street : ""
       const houseNumberCheck = houseNumber.length > 0? houseNumber : ""
 
+      // Update address if any field is filled
       if(plz.length > 0 || city.length > 0 || street.length > 0 || houseNumber.length > 0){
         setAddress({
           street: streetCheck,

@@ -6,13 +6,22 @@ import PingPerfect from '../assets/pingperfect.png';
 import ServusSpeed from '../assets/servusspeed.png';
 import VerbynDich from '../assets/verbyndich.png';
 
-// Define the props for the OfferCard component
+/**
+ * OfferCardProps interface
+ * @param offer - The offer to display
+ * @param onView - The function to call when the offer is viewed
+ */
 interface OfferCardProps {
   offer: OfferDto;
   onView: (offer: OfferDto) => void;
 }
 
-// OfferCard component displays a single internet offer
+/**
+ * OfferCard component displays a single internet offer
+ * @param offer - The offer to display
+ * @param onView - The function to call when the offer is viewed
+ * @returns The OfferCard component
+ */
 const OfferCard = ({ offer, onView }: OfferCardProps) => {
 
   // Helper function to return the correct logo image based on provider name

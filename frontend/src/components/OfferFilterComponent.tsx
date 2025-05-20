@@ -1,12 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { OfferDto } from '../types/OfferDto';
 
-// Define the props for the OfferFilter component
+/**
+ * OfferFilter component
+ * @param offers - The offers to filter
+ * @param onFilter - The function to call when the filter is applied
+ * @returns The OfferFilter component
+ */
 interface OfferFilterProps {
   offers: OfferDto[];
   onFilter: (filtered: OfferDto[]) => void;
 }
 
+/**
+ * OfferFilter component
+ * @param offers - The offers to filter
+ * @param onFilter - The function to call when the filter is applied
+ * @returns The OfferFilter component
+ */
 const OfferFilter: React.FC<OfferFilterProps> = ({ offers, onFilter }) => {
   // Local states for filter values
   const [provider, setProvider] = useState<string>('');

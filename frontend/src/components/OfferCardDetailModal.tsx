@@ -6,13 +6,23 @@ import PingPerfect from '../assets/pingperfect.png';
 import ServusSpeed from '../assets/servusspeed.png';
 import VerbynDich from '../assets/verbyndich.png';
 
-// Define the props for the OfferCardDetailModal component
+/**
+ * OfferCardDetailModal component displays the details of a single internet offer
+ * @param offer - The offer to display
+ * @param onClose - The function to call when the offer is closed
+ * @returns The OfferCardDetailModal component
+ */
 interface Props {
   offer: OfferDto;
   onClose: () => void;
 }
 
-// OfferCardDetailModal component displays the details of a single internet offer
+/**
+ * OfferCardDetailModal component displays the details of a single internet offer
+ * @param offer - The offer to display
+ * @param onClose - The function to call when the offer is closed
+ * @returns The OfferCardDetailModal component
+ */
 const OfferCardDetailModal: React.FC<Props> = ({ offer, onClose }) => {
   // Helper function to return the correct logo image based on provider name
   const getProviderImage = (provider: string) => {
