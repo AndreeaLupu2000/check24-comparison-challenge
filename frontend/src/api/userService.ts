@@ -6,7 +6,7 @@ import { UserDto, UserRegistrationDto } from "../types/UserDto";
 import { ShareDto } from "../types/ShareDto";
 
 // API URL for users
-const API = import.meta.env.VITE_BACKEND_API_URL + '/users';
+const API = 'https://check24-comparison-challenge-lxqq.onrender.com/api/users';
 
 /**
  * Get all users
