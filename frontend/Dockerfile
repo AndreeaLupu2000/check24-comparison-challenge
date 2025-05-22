@@ -3,6 +3,9 @@
  WORKDIR /app
  # Copy the package.json and install dependencies
  COPY package*.json ./
+ # Clean up potentially broken cache
+RUN rm -rf node_modules package-lock.json
+ # Install dependencies with platform-specific flags
  RUN npm install
  # Copy rest of the files
  COPY . .
