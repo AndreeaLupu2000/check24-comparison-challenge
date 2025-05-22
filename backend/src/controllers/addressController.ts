@@ -4,21 +4,27 @@ import { Permission, Role, Query } from "appwrite"
 import asyncHandler from "express-async-handler"
 import { ID} from "node-appwrite"
 
+// Config
 const DB_ID = process.env.APPWRITE_DATABASE_ID!
 const ADDRESS_COLLECTION_ID = process.env.APPWRITE_ADDRESS_COLLECTION_ID!
 
+// Helper function to create a unique hash for the address
 const addressKey = (a: any) => `${a.plz}|${a.city}|${a.street}|${a.houseNumber}`
 
 export const createAddress = async (req: Request, res: Response) => {
+  // Get the address fields from the request body
   const { plz, city, street, houseNumber } = req.body
 
+  // Check if all required fields are present
   if ( !plz || !city || !street || !houseNumber ) {
     return res.status(400).json({ error: "Missing required address fields" })
   }
 
+  // Create a unique hash for the address
   const hash = addressKey({ plz, city, street, houseNumber})
 
   try {
+    // Check if the address already exists in the database
     const result = await databases.listDocuments(DB_ID, ADDRESS_COLLECTION_ID, [
       Query.equal("hash", hash),
       Query.limit(1),
@@ -28,8 +34,10 @@ export const createAddress = async (req: Request, res: Response) => {
       return res.status(200).json(result.documents[0])
     }
 
+    // Create a unique ID for the address
     const addressId = ID.unique()
 
+    // Create the address in the database
     const created = await databases.createDocument(
       DB_ID,
       ADDRESS_COLLECTION_ID,
@@ -48,6 +56,7 @@ export const createAddress = async (req: Request, res: Response) => {
       ]
     )
 
+    // Return the created address
     res.status(201).json({ id: addressId, ...created })
   } catch (error) {
     console.error("[createOrGetAddress]", error)
@@ -58,12 +67,13 @@ export const createAddress = async (req: Request, res: Response) => {
 export const getAllAddresses = asyncHandler(async (req: Request, res: Response) => {
     try {
 
+      // Get all addresses from the database
       const response = await databases.listDocuments(
         DB_ID,
         ADDRESS_COLLECTION_ID,
       );
 
-
+      // Map the addresses to the response format
       const addresses	 = response.documents.map((doc: any) => ({
         id: doc.$id,
         plz: doc.plz,
@@ -73,6 +83,7 @@ export const getAllAddresses = asyncHandler(async (req: Request, res: Response) 
         hash: doc.hash,
       }));
 
+      // Return the addresses
       res.status(200).json(addresses);
     } catch (error) {
       console.error("[getAllAddresses]", error)

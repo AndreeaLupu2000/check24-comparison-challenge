@@ -1,10 +1,14 @@
-import React from 'react';
-import { OfferDto } from '../types/OfferDto';
-import ByteMe from '../assets/byteme.png';
-import WebWunder from '../assets/webwunder.png';
-import PingPerfect from '../assets/pingperfect.png';
-import ServusSpeed from '../assets/servusspeed.png';
-import VerbynDich from '../assets/verbyndich.png';
+// components/OfferCardDetailModal.tsx
+// React
+import React from "react";
+// Dtos
+import { OfferDto } from "../types/OfferDto";
+// Assets
+import ByteMe from "../assets/byteme.png";
+import WebWunder from "../assets/webwunder.png";
+import PingPerfect from "../assets/pingperfect.png";
+import ServusSpeed from "../assets/servusspeed.png";
+import VerbynDich from "../assets/verbyndich.png";
 
 /**
  * OfferCardDetailModal component displays the details of a single internet offer
@@ -89,7 +93,7 @@ const OfferCardDetailModal: React.FC<Props> = ({ offer, onClose }) => {
                 }
 
                 const validExtras = parsedExtras.filter((extra: string) => {
-                    const [_, rawValue] = extra.split(':').map(s => s.trim());
+                    const [, rawValue] = extra.split(':').map(s => s.trim());
                     return rawValue && rawValue.toLowerCase() !== 'null';
                 });
 

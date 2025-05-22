@@ -15,15 +15,21 @@ const PAGE_LIMIT = 25
  * Create a shared offer
  */
 export const createSharedOffer = asyncHandler(async (req: Request, res: Response) => {
+  // Get the userId, address, offerIds, and offers from the request body
   const { userId, address, offerIds, offers } = req.body
 
+  // Check if all required fields are present
   if (!userId || !address || !offerIds) {
      res.status(400).json({ error: "Missing userId, address, or offerIds" })
      return;
   }
 
+
   try {
+      // Create a unique ID for the share
     const shareId = ID.unique()
+
+    // Create the share in the database
     const share = await databases.createDocument(
       DB_ID,
       SHARE_COLLECTION_ID,
@@ -42,6 +48,7 @@ export const createSharedOffer = asyncHandler(async (req: Request, res: Response
       ]
     )
 
+    // Return the created share
     res.status(201).json({
         id: shareId,
         userId: share.userId,
@@ -60,14 +67,17 @@ export const createSharedOffer = asyncHandler(async (req: Request, res: Response
  * Get a shared offer by ID
  */
 export const getSharedOffer = async (req: Request, res: Response) => {
+  // Get the id from the request params
   const { id } = req.params
 
   try {
+    // Get the share from the database
     const doc = await databases.getDocument(
         DB_ID, 
         SHARE_COLLECTION_ID, 
         id)
         
+    // Return the share
     res.status(200).json({
       ...doc,
       address: JSON.parse(doc.address),

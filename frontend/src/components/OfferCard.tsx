@@ -1,10 +1,12 @@
-// OfferCard.tsx
-import { OfferDto } from '../types/OfferDto';
-import ByteMe from '../assets/byteme.png';
-import WebWunder from '../assets/webwunder.png';
-import PingPerfect from '../assets/pingperfect.png';
-import ServusSpeed from '../assets/servusspeed.png';
-import VerbynDich from '../assets/verbyndich.png';
+// components/OfferCard.tsx
+// Dtos
+import { OfferDto } from "../types/OfferDto";
+// Assets
+import ByteMe from "../assets/byteme.png";
+import WebWunder from "../assets/webwunder.png";
+import PingPerfect from "../assets/pingperfect.png";
+import ServusSpeed from "../assets/servusspeed.png";
+import VerbynDich from "../assets/verbyndich.png";
 
 /**
  * OfferCardProps interface

@@ -1,3 +1,4 @@
+//types/AddressDto.ts
 export interface AddressDto {
     id: string
     street: string;

@@ -1,3 +1,4 @@
+//types/ShareDto.ts
 import { AddressInputDto } from "./AddressDto";
 
 export interface ShareDto {

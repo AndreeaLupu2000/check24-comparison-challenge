@@ -1,4 +1,7 @@
+//api/userAddressService.ts
+// Axios
 import axios from "axios";
+// Types
 import { UserAddressInputDto } from "../types/UserAddressDto";
 
 // API URL for user addresses
@@ -32,8 +35,8 @@ export const getLastUsedAddressByUserId = async (userId: string) => {
   try {
     const response = await axios.get(`${API_URL}/lastUsed/${userId}`);
     return response.data;
-  } catch (error: any) {
-    if (error.response && error.response.status === 404) {
+  } catch (error: unknown) {
+    if (error instanceof Error && error.message === "404") {
       // Handle 404 specifically
       console.warn("No address found for user");
       return null; // or handle however you'd like

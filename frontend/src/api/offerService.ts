@@ -1,4 +1,7 @@
+//api/offerService.ts
+// Axios
 import axios from "axios";
+// Types
 import { OfferDto } from "../types/OfferDto";
 import { AddressInputDto } from "../types/AddressDto";
 

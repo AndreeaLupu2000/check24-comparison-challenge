@@ -1,4 +1,7 @@
+//api/userService.ts
+// Axios
 import axios from "axios";
+// Types
 import { UserDto, UserRegistrationDto } from "../types/UserDto";
 import { ShareDto } from "../types/ShareDto";
 

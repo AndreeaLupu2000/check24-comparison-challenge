@@ -1,4 +1,7 @@
+//api/shareService.ts
+// Axios
 import axios from "axios";
+// Types
 import { ShareDto, CreateShareDto } from "../types/ShareDto";
 
 // API URL for shares

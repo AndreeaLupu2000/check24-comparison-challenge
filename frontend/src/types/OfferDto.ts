@@ -1,3 +1,4 @@
+//types/OfferDto.ts
 export interface OfferDto {
     id: string;
     provider: string;

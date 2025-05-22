@@ -1,3 +1,4 @@
+//types/UserDto.ts
 export interface UserDto {
   id: string;
   email: string;

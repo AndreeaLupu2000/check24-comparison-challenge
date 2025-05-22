@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { AddressInputDto } from '../types/AddressDto';
+import { AddressInputDto, AddressDto } from '../types/AddressDto';
 
 // API URL for addresses
 const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_PLACE_API; // Replace with your actual API key
@@ -49,7 +49,7 @@ export async function validateAddress(
  * @param address - The address to create
  * @returns The created address
  */
-export const createAddress = async (address: AddressInputDto): Promise<AddressInputDto> => {
+export const createAddress = async (address: AddressInputDto): Promise<AddressDto> => {
   const response = await axios.post(API, address);
   return response.data;
 }

@@ -2,7 +2,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-
+// Export the config object
 export const config = {
   // API Keys
   BYTE_ME_API_KEY: process.env.BYTE_ME_API_KEY!,

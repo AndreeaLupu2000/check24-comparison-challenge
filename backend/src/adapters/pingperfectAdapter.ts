@@ -5,10 +5,20 @@ import { config } from "../config";
 import axios from "axios";
 import crypto from "crypto";
 
+
 export const PingPerfectAdapter: ProviderAdapter = {
+
+  /**
+   * Get offers from Ping Perfect
+   * @param address - The address to get offers for
+   * @returns The offers
+   */
   async getOffers(address: AddressInput): Promise<Offer[]> {
+
+    // Get the address details
     const { street, houseNumber, city, plz } = address;
 
+    // Initialize the offers array
     const allOffers: Offer[] = [];
 
     // Create the request body for both fiber and non-fiber offers
@@ -70,6 +80,7 @@ export const PingPerfectAdapter: ProviderAdapter = {
           ].filter(Boolean).map(String)),
         }));
 
+        // Add the general offers to the offers array
         allOffers.push(...normalized);
       } catch (err) {
         console.error(`[Ping Perfect Adapter] Error (wantsFiber=${wantsFiber}):`, err);

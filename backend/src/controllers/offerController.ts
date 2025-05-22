@@ -1,22 +1,28 @@
 // src/controllers/offerController.ts
 
 import { Request, Response } from "express"
+//Models
 import { AddressInput } from "../models/AddressModel"
 import { Offer } from "../models/OfferModel"
+//Adapters
 import { ByteMeAdapter } from "../adapters/bytemeAdapter"
 import { WebWunderAdapter } from "../adapters/webwunderAdapter"
 import { PingPerfectAdapter } from "../adapters/pingperfectAdapter"
 import { VerbynDichAdapter } from "../adapters/verbyndichAdapter"
 import { ServusSpeedAdapter } from "../adapters/servusspeedAdapter"
 import { lateOffersCache } from "../models/LateOffersCacheModel"
+//appwrite
 import { databases } from "../config/appwrite"
 import { Permission, Role } from "appwrite"
 import { ID } from "node-appwrite"
+//Utils
 import { retryWithTimeout } from "./utils/retry"
 
+// APIs
 const DB_ID = process.env.APPWRITE_DATABASE_ID!
 const OFFER_COLLECTION_ID = process.env.APPWRITE_OFFER_COLLECTION_ID!
 
+// Providers
 const providers = [
   ByteMeAdapter,
   ServusSpeedAdapter,
@@ -25,6 +31,7 @@ const providers = [
   VerbynDichAdapter,
 ]
 
+// Helper function to create a unique hash for the address
 const addressKey = (address: AddressInput) =>
   `${address.street}|${address.houseNumber}|${address.city}|${address.plz}`
 
@@ -34,6 +41,7 @@ const addressKey = (address: AddressInput) =>
  */
 export const getOffersHandler = async (req: Request, res: Response) => {
   try {
+    // Get the address fields from the request body
     const input: AddressInput = req.body
     const { street, houseNumber, city, plz } = input
 
@@ -41,20 +49,28 @@ export const getOffersHandler = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Missing address fields." })
     }
 
+    // Create the address object
     const address = { street, houseNumber, city, plz }
 
+    // Get the offers from the providers
     const results = await Promise.allSettled(
       providers.map((p) => retryWithTimeout(() => p.getOffers(address)))
     )
 
+    // Create the offers array
     const offers: Offer[] = []
+    // Create the late providers array
     const lateProviders: typeof providers = []
 
+    // Loop through the results
     for (let i = 0; i < results.length; i++) {
       const result = results[i]
+
+      // If the result is fulfilled, add the offers to the offers array
       if (result.status === "fulfilled") {
         offers.push(...result.value)
       } else {
+        // If the result is rejected, add the provider to the late providers array
         lateProviders.push(providers[i])
       }
     }
@@ -62,8 +78,10 @@ export const getOffersHandler = async (req: Request, res: Response) => {
     // Persist fast offers to Appwrite
     for (const offer of offers) {
       try {
-
+        // Create a unique ID for the offer
         const offerId = ID.unique()
+
+        // Create the offer in the database
         await databases.createDocument(
           DB_ID,
           OFFER_COLLECTION_ID,
@@ -93,15 +111,23 @@ export const getOffersHandler = async (req: Request, res: Response) => {
 
     // Background fetch late offers
     if (lateProviders.length > 0) {
+      // Create the late offers array
       const lateOffers: Offer[] = []
+
+      // Create the key for the late offers cache
       const key = addressKey(address)
 
+      // Fetch the late offers
       ;(async () => {
         for (const provider of lateProviders) {
           try {
+            // Fetch the offers from the provider
             const result = await provider.getOffers(address)
+            
+            // Add the offers to the late offers array
             lateOffers.push(...result)
           } catch (err) {
+            // Log the error
             console.warn(`[lateOffers] ${provider.constructor.name} failed:`, err)
           }
         }

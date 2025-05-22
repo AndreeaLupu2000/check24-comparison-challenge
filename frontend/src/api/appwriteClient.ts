@@ -1,4 +1,5 @@
-// This file establishes the connection to the appwrite database
+//api/appwriteClient.ts
+// Appwrite
 import { Client } from 'appwrite'
 
 export const appwriteClient = new Client()

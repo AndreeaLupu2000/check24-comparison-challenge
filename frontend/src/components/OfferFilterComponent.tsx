@@ -1,5 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { OfferDto } from '../types/OfferDto';
+// components/OfferFilterComponent.tsx
+// React
+import React, { useEffect, useState } from "react";
+// Dtos
+import { OfferDto } from "../types/OfferDto";
 
 /**
  * OfferFilter component
@@ -20,13 +23,13 @@ interface OfferFilterProps {
  */
 const OfferFilter: React.FC<OfferFilterProps> = ({ offers, onFilter }) => {
   // Local states for filter values
-  const [provider, setProvider] = useState<string>('');
+  const [provider, setProvider] = useState<string>("");
   const [minSpeed, setMinSpeed] = useState<number>(0);
   const [maxPrice, setMaxPrice] = useState<number>(Infinity);
-  const [duration, setDuration] = useState<number | ''>('');
+  const [duration, setDuration] = useState<number | "">("");
 
   // Unique providers from all offers
-  const uniqueProviders = Array.from(new Set(offers.map(o => o.provider)));
+  const uniqueProviders = Array.from(new Set(offers.map((o) => o.provider)));
 
   // Effect to filter offers based on current filter values
   useEffect(() => {
@@ -34,7 +37,9 @@ const OfferFilter: React.FC<OfferFilterProps> = ({ offers, onFilter }) => {
       const matchesProvider = provider ? o.provider === provider : true;
       const matchesSpeed = parseFloat(o.speedMbps) >= minSpeed;
       const matchesPrice = parseFloat(o.pricePerMonth) <= maxPrice;
-      const matchesDuration = duration ? parseInt(o.durationMonths) === duration : true;
+      const matchesDuration = duration
+        ? parseInt(o.durationMonths) === duration
+        : true;
 
       return matchesProvider && matchesSpeed && matchesPrice && matchesDuration;
     });
@@ -47,10 +52,11 @@ const OfferFilter: React.FC<OfferFilterProps> = ({ offers, onFilter }) => {
     <div className="bg-white rounded-md p-4 shadow-sm mb-6">
       <h3 className="text-lg font-semibold mb-3">Filter Offers</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-
         {/* ------------------ Provider Filter ------------------ */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Provider</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Provider
+          </label>
           <select
             className="w-full border rounded px-3 py-2"
             value={provider}
@@ -58,14 +64,18 @@ const OfferFilter: React.FC<OfferFilterProps> = ({ offers, onFilter }) => {
           >
             <option value="">All</option>
             {uniqueProviders.map((prov) => (
-              <option key={prov} value={prov}>{prov}</option>
+              <option key={prov} value={prov}>
+                {prov}
+              </option>
             ))}
           </select>
         </div>
 
         {/* ------------------ Min Speed Filter ------------------ */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Min Speed (Mbps)</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Min Speed (Mbps)
+          </label>
           <input
             type="number"
             min={0}
@@ -77,25 +87,33 @@ const OfferFilter: React.FC<OfferFilterProps> = ({ offers, onFilter }) => {
 
         {/* ------------------ Max Price Filter ------------------ */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Max Price (€)</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Max Price (€)
+          </label>
           <input
             type="number"
             min={0}
             className="w-full border rounded px-3 py-2"
-            value={isFinite(maxPrice) ? maxPrice : ''}
-            onChange={(e) => setMaxPrice(e.target.value ? Number(e.target.value) : Infinity)}
+            value={isFinite(maxPrice) ? maxPrice : ""}
+            onChange={(e) =>
+              setMaxPrice(e.target.value ? Number(e.target.value) : Infinity)
+            }
           />
         </div>
 
         {/* ------------------ Duration Filter ------------------ */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Duration (Months)</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Duration (Months)
+          </label>
           <input
             type="number"
             min={0}
             className="w-full border rounded px-3 py-2"
             value={duration}
-            onChange={(e) => setDuration(e.target.value ? parseInt(e.target.value) : '')}
+            onChange={(e) =>
+              setDuration(e.target.value ? parseInt(e.target.value) : "")
+            }
           />
         </div>
       </div>
