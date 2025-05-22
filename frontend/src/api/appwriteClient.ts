@@ -3,5 +3,5 @@
 import { Client } from 'appwrite'
 
 export const appwriteClient = new Client()
-  .setEndpoint('https://service.appwrite.dpschool.app/v1')
+  .setEndpoint(import.meta.env.VITE_APPWRITE_ENDPOINT!)
   .setProject(import.meta.env.VITE_APPWRITE_PROJECT_ID)
