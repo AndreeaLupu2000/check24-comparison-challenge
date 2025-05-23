@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { createUser } from "../api/userService";
 // Assets
 import Icon from "../assets/icon.png";
+import bcrypt from "bcryptjs";
 
 const SignupView = () => {
   // Local state for the email and password
@@ -28,7 +29,10 @@ const SignupView = () => {
 
     try {
       // Create the user
-      await createUser({ email, password });
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      await createUser({ email, password: hashedPassword });
 
       // Redirect to login page
       navigate("/");

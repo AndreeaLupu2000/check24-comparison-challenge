@@ -11,6 +11,7 @@ import { UserDto } from "../types/UserDto";
 import { getAllUsers } from "../api/userService";
 // Assets
 import Icon from "../assets/icon.png";
+import bcrypt from "bcryptjs";
 
 const LoginView = () => {
   // Context for the address
@@ -57,7 +58,7 @@ const LoginView = () => {
 
     // Find the user with the given email and password
     const user = users.find(
-      (u) => u.email === email && u.password === password
+      (u) => u.email === email && bcrypt.compare(password, u.password)
     );
 
     // If user is found, set the current user and navigate to the search view
