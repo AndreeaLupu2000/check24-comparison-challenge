@@ -58,7 +58,7 @@ export const createAddress = async (address: AddressInputDto): Promise<AddressDt
  * Get all addresses
  * @returns An array of addresses
  */
-export const getAllAddresses = async (): Promise<AddressInputDto[]> => {
+export const getAllAddresses = async (): Promise<AddressDto[]> => {
   const response = await axios.get(API);
   return response.data;
 }

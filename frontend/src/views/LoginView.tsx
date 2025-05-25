@@ -13,7 +13,18 @@ import { getAllUsers } from "../api/userService";
 import Icon from "../assets/icon.png";
 import bcrypt from "bcryptjs";
 
-const LoginView = () => {
+interface LoginViewProps {
+  errors?: {
+    email?: string;
+    password?: string;
+  };
+
+  onFieldChange?: (field: "email" | "password") => void;
+}
+
+const LoginView: React.FC<LoginViewProps> = ({ 
+  onFieldChange,
+}) => {
   // Context for the address
   const { setAddress } = useAddress();
 
@@ -24,16 +35,17 @@ const LoginView = () => {
   const [emailInput, setEmailInput] = useState("");
   const [passwordInput, setPasswordInput] = useState("");
 
-  // Local states for the error messages
-  const [errorMessage, setErrorMessage] = useState("");
-  const [emailError, setEmailError] = useState(false);
-  const [passwordError, setPasswordError] = useState(false);
-
   // Context of the current user
   const { setUser } = useAuth();
 
   // Navigation to other views
   const navigate = useNavigate();
+
+  // Add this state at the top with other states
+  const [formErrors, setFormErrors] = useState({
+    email: "",
+    password: ""
+  });
 
   // Effect to fetch all users from the database
   useEffect(() => {
@@ -43,42 +55,52 @@ const LoginView = () => {
   }, []);
 
   // Function to handle the login process
-  const handleLogin = (email: string, password: string) => {
+  const handleLogin = async (email: string, password: string) => {
     // Clear previous errors
-    setEmailError(false);
-    setPasswordError(false);
-    setErrorMessage("");
+    setFormErrors({ email: "", password: "" });
 
-    // Check if password is empty
-    if (!password) {
-      setPasswordError(true);
-      setErrorMessage("Please enter the password");
+    // Check if email is empty
+    if (!email) {
+      setFormErrors(prev => ({ ...prev, email: "Please enter the email" }));
       return;
     }
 
-    // Find the user with the given email and password
-    const user = users.find(
-      (u) => u.email === email && bcrypt.compare(password, u.password)
-    );
-
-    // If user is found, set the current user and navigate to the search view
-    if (user) {
-      setUser({ id: user.id, email: user.email });
-
-
-      setAddress({
-        street: "",
-        houseNumber: "",
-        plz: "",
-        city: "",
-      });
-      navigate("/search");
-    } else {
-      // If user is not found, set the error messages
-      setEmailError(true);
-      setPasswordError(true);
-      setErrorMessage("Email or password invalid");
+    // Check if email is valid
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setFormErrors(prev => ({ ...prev, email: "Invalid email format" }));
+      return;
     }
+
+    // Check if password is empty
+    if (!password) {
+      setFormErrors(prev => ({ ...prev, password: "Please enter the password" }));
+      return;
+    }
+
+    // Check if email is valid
+    const foundUser = users.find((user) => user.email === email);
+    if (!foundUser) {
+      setFormErrors(prev => ({ ...prev, email: "Email not found" }));
+      return;
+    }
+
+    // Check if password matches using await
+    const isPasswordValid = await bcrypt.compare(password, foundUser.password);
+    if (!isPasswordValid) {
+      setFormErrors(prev => ({ ...prev, password: "Password is invalid" }));
+      return;
+    }
+
+    // If we get here, both email and password are valid
+    setUser({ id: foundUser.id, email: foundUser.email });
+    setAddress({
+      street: "",
+      houseNumber: "",
+      plz: "",
+      city: "",
+    });
+    navigate("/search");
   };
 
   // ------------------------ JSX: Login View Layout ------------------------
@@ -103,17 +125,30 @@ const LoginView = () => {
         <div className="mb-6 relative">
           <label
             htmlFor="email"
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-lg font-medium text-gray-700 h-5"
           >
             Email
           </label>
+
+          {/* ------------------ Error message for Email ------------------ */}
+          <span
+            className={`text-xs h-4 ${formErrors.email ? "text-red-500" : "text-transparent"}`}
+          >
+            {formErrors.email || "No error"}
+          </span>
+
+          {/* ------------------ Input Field ------------------ */}
           <input
             type="email"
             value={emailInput}
-            onChange={(e) => setEmailInput(e.target.value)}
+            onChange={(e) => {
+              setEmailInput(e.target.value);
+              setFormErrors(prev => ({ ...prev, email: "" }));
+              onFieldChange?.("email");
+            }}
             placeholder="example@email.com"
             className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-1 ${
-              emailError
+              formErrors.email
                 ? "border-red-500 ring-red-500"
                 : "border-gray-300 focus:ring-indigo-500"
             }`}
@@ -124,35 +159,41 @@ const LoginView = () => {
         <div className="mb-6 relative">
           <label
             htmlFor="password"
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-lg font-medium text-gray-700 h-5"
           >
             Password
           </label>
+
+          {/* ------------------ Error message for Password ------------------ */}
+          <span
+            className={`text-xs h-4 ${formErrors.password ? "text-red-500" : "text-transparent"}`}
+          >
+            {formErrors.password || "No error"}
+          </span>
+
+          {/* ------------------ Input Field ------------------ */}
           <input
             type="password"
             value={passwordInput}
-            onChange={(e) => setPasswordInput(e.target.value)}
+            onChange={(e) => {
+              setPasswordInput(e.target.value);
+              setFormErrors(prev => ({ ...prev, password: "" }));
+              onFieldChange?.("password");
+            }}
             placeholder="********"
             className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-1 ${
-              passwordError
+              formErrors.password
                 ? "border-red-500 ring-red-500"
                 : "border-gray-300 focus:ring-indigo-500"
             }`}
           />
         </div>
 
-        {/* ------------------ Error Message ------------------ */}
-        {errorMessage && (
-          <div className="mb-4 text-center text-red-600 font-medium">
-            {errorMessage}
-          </div>
-        )}
-
         {/* ------------------ Login Button ------------------ */}
         <div className="flex justify-center">
           <button
             onClick={() => handleLogin(emailInput, passwordInput)}
-            className="bg-indigo-500 text-white px-4 py-2 rounded-md shadow-sm hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            className="bg-blue-600 text-white px-4 py-2 rounded-md shadow-sm hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
           >
             Login
           </button>
@@ -163,7 +204,7 @@ const LoginView = () => {
           <span className="text-sm text-gray-600">Don't have an account?</span>
           <button
             onClick={() => navigate("/signup")}
-            className="text-indigo-600 hover:underline ml-1 text-sm"
+            className="text-blue-600 hover:underline ml-1 text-sm"
           >
             Sign up
           </button>

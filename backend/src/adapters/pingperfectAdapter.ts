@@ -62,25 +62,36 @@ export const PingPerfectAdapter: ProviderAdapter = {
         const offers = response.data ?? [];
 
         // Normalize the offers to the common offer model
-        const normalized: Offer[] = offers.map((o: any) => ({
-          provider: "Ping Perfect",
-          productId: "", // not provided
-          title: o.providerName ?? "Internet Offer",
-          speedMbps: o.productInfo?.speed ?? "0",
-          pricePerMonth: o.pricingDetails?.monthlyCostInCent
-            ? (o.pricingDetails.monthlyCostInCent / 100).toString()
-            : "0",
-          durationMonths: o.productInfo?.contractDurationInMonths.toString() ?? "24",
-          connectionType: o.productInfo?.connectionType ?? "DSL",
-          extras: JSON.stringify([
-            `TV: ${o.productInfo?.tv}`,
-            `Installation Service: ${o.pricingDetails?.installationService}`,
-            `Limit from: ${o.productInfo?.limitFrom}`,
-            `Max age: ${o.productInfo?.maxAge}`,
-          ].filter(Boolean).map(String)),
-        }));
+        const normalized: Offer[] = offers
+          .map((o: any) => {
+            // Check if any required field is empty, null, or NaN
+            if (!o.providerName || 
+                !o.productInfo?.speed || isNaN(o.productInfo?.speed) ||
+                !o.pricingDetails?.monthlyCostInCent || isNaN(o.pricingDetails?.monthlyCostInCent) ||
+                !o.productInfo?.contractDurationInMonths || isNaN(o.productInfo?.contractDurationInMonths) ||
+                !o.productInfo?.connectionType) {
+              return null;
+            }
 
-        // Add the general offers to the offers array
+            return {
+              provider: "Ping Perfect",
+              productId: "", // not provided
+              title: o.providerName,
+              speedMbps: o.productInfo?.speed,
+              pricePerMonth: (o.pricingDetails.monthlyCostInCent / 100).toString(),
+              durationMonths: o.productInfo?.contractDurationInMonths.toString(),
+              connectionType: o.productInfo?.connectionType,
+              extras: JSON.stringify([
+                `TV: ${o.productInfo?.tv}`,
+                `Installation Service: ${o.pricingDetails?.installationService}`,
+                `Limit from: ${o.productInfo?.limitFrom}`,
+                `Max age: ${o.productInfo?.maxAge}`,
+              ].filter(Boolean).map(String)),
+            };
+          })
+          .filter((offer: Offer | null): offer is Offer => offer !== null); // Remove null offers
+
+        // Add the filtered offers to the offers array
         allOffers.push(...normalized);
       } catch (err) {
         console.error(`[Ping Perfect Adapter] Error (wantsFiber=${wantsFiber}):`, err);

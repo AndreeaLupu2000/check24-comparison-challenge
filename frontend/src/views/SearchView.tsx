@@ -7,7 +7,7 @@ import { OfferDto } from "../types/OfferDto";
 // Services
 import { streamOffers } from "../api/offerService";
 import { createSharedOffer } from "../api/shareService";
-import { createAddress } from "../api/addressService";
+import { createAddress, getAllAddresses } from "../api/addressService";
 import { createUserAddress } from "../api/userAddressService";
 //Contexts
 import { useAddress } from "../context/AddressContext";
@@ -53,7 +53,6 @@ const SearchView = () => {
   // const location = useLocation()
 
   // Local state for the offers reference
-  const offersRef = useRef<OfferDto[]>([]);
   const offerStringRef = useRef<string[]>([]);
 
   // Local state for the selected offer
@@ -72,6 +71,7 @@ const SearchView = () => {
     street?: string;
     houseNumber?: string;
   }>({});
+
 
   // Auto-load address from URL or localStorage. It applies automatically the address and searches for offers.
   useEffect(() => {
@@ -102,13 +102,29 @@ const SearchView = () => {
         setAddress(parsed);
       }
     }
+
+    const navType = 
+      (performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming)?.type ?? "navigate";
+
+    if (navType === "reload") {
+      const storedOffers = localStorage.getItem("offers");
+      if (storedOffers) {
+        const parsedOffers = JSON.parse(storedOffers);
+        offerStringRef.current = parsedOffers;
+        setOffers(parsedOffers.map((o: string) => JSON.parse(o)));
+        setCanShare(true); // allow sharing restored offers
+      }
+      setLoading(false);
+    }
   }, []);
+
 
   // Handles incoming offers one at a time during streaming
   const handleNewOffer = (offer: OfferDto) => {
-    offersRef.current.push(offer);
+    // Add the offer to the offers reference coming from the streamOffers function
     offerStringRef.current.push(JSON.stringify(offer));
 
+    // Add the offer to the offers state
     setOffers((prev) => [...prev, offer]);
     setLoading(false);
   };
@@ -116,6 +132,7 @@ const SearchView = () => {
   // Share offers by saving them and generating a WhatsApp share link
   const createSharedLink = async () => {
     try {
+      // Create the shared offer
       const share = await createSharedOffer({
         userId: user.id,
         address: JSON.stringify(address),
@@ -123,8 +140,10 @@ const SearchView = () => {
         offerIds: [],
       });
 
+      // Create the share URL
       const shareUrl = `${window.location.origin}/share/${share.id}`;
 
+      // Open the WhatsApp share link
       window.open(
         `https://wa.me/?text=${encodeURIComponent(
           `Check out these offers: ${shareUrl}`
@@ -132,6 +151,7 @@ const SearchView = () => {
         "_blank"
       );
 
+      // Navigate to the search view with the same address
       navigate(
         `/search?street=${encodeURIComponent(
           address.street
@@ -164,6 +184,8 @@ const SearchView = () => {
       },
     };
 
+    console.log("payload", payload);
+
     try {
       // Send the payload to the Google Address Validation API
       const res = await fetch(
@@ -180,6 +202,8 @@ const SearchView = () => {
       // Get the response from the Google Address Validation API
       const data = await res.json();
 
+      console.log("data", data);
+
       // Get the address components from the response
       const components = data.result?.address?.addressComponents || [];
 
@@ -192,24 +216,32 @@ const SearchView = () => {
         )?.confirmationLevel;
 
       // Check if the house number is confirmed
-      if (getConfirmation("street_number") !== "CONFIRMED") {
+      if (getConfirmation("street_number") === "UNCONFIRMED_BUT_PLAUSIBLE") {
+        missingFields.houseNumber = "The input is unconfirmed";
+      } else if (getConfirmation("street_number") !== "CONFIRMED") {
         missingFields.houseNumber = "House Number is invalid.";
       }
 
       // Check if the street is confirmed
-      if (getConfirmation("route") !== "CONFIRMED") {
+      if (getConfirmation("route") === "UNCONFIRMED_BUT_PLAUSIBLE") {
+        missingFields.street = "The input is unconfirmed";
+      } else if (getConfirmation("route") !== "CONFIRMED") {
         missingFields.street = "Street is invalid.";
       }
 
       // Check if the city is confirmed
-      if (getConfirmation("locality") !== "CONFIRMED") {
+      if (getConfirmation("locality") === "UNCONFIRMED_BUT_PLAUSIBLE") {
+        missingFields.city = "The input is unconfirmed";
+      } else if (getConfirmation("locality") !== "CONFIRMED") {
         missingFields.city = "City is invalid.";
       }
 
       // Check if the postal code is confirmed
-      if (getConfirmation("postal_code") !== "CONFIRMED") {
+       if (getConfirmation("postal_code") === "UNCONFIRMED_BUT_PLAUSIBLE") {
+        missingFields.plz = "The input is unconfirmed";
+      } else if (getConfirmation("postal_code") !== "CONFIRMED") {
         missingFields.plz = "Postal Code is invalid.";
-      }
+      } 
 
       // Set field-specific errors
       setAddressErrors((prev) => ({ ...prev, ...missingFields }));
@@ -224,6 +256,9 @@ const SearchView = () => {
 
   // Triggers the search process for offers
   const onSearch = async () => {
+    // Clear Local Storage of the offers
+    localStorage.removeItem("offers");
+
     const newErrors: typeof addressErrors = {};
 
     // Check if any field is empty or undefined
@@ -257,17 +292,29 @@ const SearchView = () => {
       countryCode: address.countryCode || "DE",
     });
 
+    // If the address already exists, get the existing address ID
+    if (!savedAddress.id) {
+      const allAddresses = await getAllAddresses();
+
+      for (const a of allAddresses) {
+        if (a.street === address.street && a.houseNumber === address.houseNumber && a.city === address.city && a.plz === address.plz) {
+          savedAddress.id = a.id;
+          break;
+        }
+      }
+    }
     // 2. Save relation to user (UserAddressDto)
-    await createUserAddress({
+    const savedUserAddress = await createUserAddress({
       userId: user.id,
       addressId: savedAddress.id,
     });
+
+    console.log("savedUserAddress", savedUserAddress);
 
     // Save the address to localStorage
     localStorage.setItem("address", JSON.stringify(address));
 
     // Clear and reset offers
-    offersRef.current = [];
     offerStringRef.current = [];
     setOffers([]);
     setLoading(true);
@@ -294,6 +341,9 @@ const SearchView = () => {
       console.warn("No user ID available for sharing");
       return;
     }
+
+    // Save the offers to the local storage
+    localStorage.setItem("offers", JSON.stringify(offerStringRef.current));
   };
 
   // Handles errors during the streaming process
@@ -333,13 +383,14 @@ const SearchView = () => {
           onClick={() => {
             localStorage.removeItem("address");
             localStorage.removeItem("user");
+            localStorage.removeItem("offers");
             setOffers([]);
             setFilteredOffers([]);
             navigate("/");
           }}
-          className="text-indigo-600 hover:underline text-sm bg-white px-3 py-1 rounded shadow"
+          className="text-blue-600 hover:underline text-md font-semibold bg-white px-3 py-1 rounded shadow"
         >
-          ← Back to Login
+          Back to Login
         </button>
       </div>
       <div className="w-full py-6 mb-8 mt-10">

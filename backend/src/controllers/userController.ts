@@ -54,7 +54,13 @@ export const registerUser = asyncHandler(async (req: Request, res: Response) => 
     );
 
     // Return the created user
-    res.status(201).json({ id: userId, ...created });
+    res.status(201).json(
+      {
+        id: userId,
+        email: created.email,
+        password: created.password,
+      }
+    );
 
   } catch (error) {
     console.error("Appwrite error:", JSON.stringify(error, null, 2));

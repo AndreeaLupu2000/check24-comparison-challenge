@@ -59,10 +59,10 @@ const OfferCard = ({ offer, onView }: OfferCardProps) => {
           {/* ------------------ Provider title and price ------------------ */}
           <div className="flex justify-between items-start mb-2">
             <div>
-              <h3 className="text-lg font-semibold text-gray-800">{offer.title}</h3>
+              <h3 className="text-xl font-semibold text-gray-800">{offer.title}</h3>
               <p className="text-sm text-gray-500">{offer.provider}</p>
             </div>
-            <div className="text-sm font-semibold text-blue-600">{offer.pricePerMonth} €</div>
+            <div className="text-2xl font-semibold text-blue-600">{offer.pricePerMonth} €</div>
           </div>
 
           {/* ------------------ Speed and duration ------------------ */}

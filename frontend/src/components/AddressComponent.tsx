@@ -247,21 +247,20 @@ const AddressComponent: React.FC<AddressComponentProps> = ({
           plz: plzCheck,
           countryCode: "DE",
         });
-      } 
-        else if (
-          plz.length === 0 &&
-          city.length === 0 &&
-          street.length === 0 &&
-          houseNumber.length === 0
-        ) {
-          // Clear the address if all fields are empty
-          setAddress({
-            street: "",
-            houseNumber: "",
-            city: "",
-            plz: "",
-            countryCode: "DE",
-          });
+      } else if (
+        plz.length === 0 &&
+        city.length === 0 &&
+        street.length === 0 &&
+        houseNumber.length === 0
+      ) {
+        // Clear the address if all fields are empty
+        setAddress({
+          street: "",
+          houseNumber: "",
+          city: "",
+          plz: "",
+          countryCode: "DE",
+        });
       }
     }
   }, [street, houseNumber, city, plz]);
@@ -287,14 +286,26 @@ const AddressComponent: React.FC<AddressComponentProps> = ({
     <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="bg-white p-4 rounded-md mt-8">
         <div className="flex gap-4 items-end">
+
           {/* ------------------ PLZ Input ------------------ */}
           <div className="flex flex-col">
             <label
               htmlFor="plz"
-              className="text-sm font-medium text-gray-700 mb-1"
+              className="text-lg font-medium text-gray-700 h-6"
             >
               PLZ
             </label>
+
+            {/*------------------ Error message for PLZ ------------------ */}
+            <span
+                className={`text-xs h-4 ${
+                  errors.plz ? "text-red-500" : "text-transparent"
+                }`}
+              >
+                {errors.plz || "No error"}
+              </span>
+
+
             <div className="relative" ref={inputRef}>
               <input
                 id="plz"
@@ -317,15 +328,6 @@ const AddressComponent: React.FC<AddressComponentProps> = ({
                     : "border-gray-300 focus:ring-indigo-500"
                 }`}
               />
-
-              {/*------------------ Error message for PLZ ------------------ */}
-              <span
-                className={`text-xs h-5 mt-1 ${
-                  errors.plz ? "text-red-500" : "text-transparent"
-                }`}
-              >
-                {errors.plz || "No error"}
-              </span>
 
               {/*------------------ Session suggestion ------------------ */}
               {showSessionSuggestion && sessionAddress && (
@@ -371,10 +373,20 @@ const AddressComponent: React.FC<AddressComponentProps> = ({
           <div className="flex flex-col">
             <label
               htmlFor="city"
-              className="text-sm font-medium text-gray-700 mb-1"
+              className="text-lg font-medium text-gray-700 h-6"
             >
               City
             </label>
+
+            {/*------------------ Error message for City ------------------ */}
+            <span
+              className={`text-xs h-4 ${
+                errors.city ? "text-red-500" : "text-transparent"
+              }`}
+            >
+              {errors.city || "No error"}
+            </span>
+
             <input
               id="city"
               type="text"
@@ -392,36 +404,35 @@ const AddressComponent: React.FC<AddressComponentProps> = ({
                   : "border-gray-300 focus:ring-indigo-500"
               }`}
             />
-
-            {/*------------------ Error message for City ------------------ */}
-            <span
-              className={`text-xs h-5 mt-1 ${
-                errors.city ? "text-red-500" : "text-transparent"
-              }`}
-            >
-              {errors.city || "No error"}
-            </span>
           </div>
 
           {/*------------------ Street Input ------------------ */}
           <div className="flex flex-col">
+            
             <label
               htmlFor="street"
-              className="text-sm font-medium text-gray-700 mb-1"
+              className="text-lg font-medium text-gray-700 h-6"
             >
               Street
             </label>
+
+            {/*------------------ Error message for Street ------------------ */}
+            <span
+              className={`text-xs h-4 ${
+                errors.street ? "text-red-500" : "text-transparent"
+              }`}
+            >
+              {errors.street || "No error"}
+            </span>
+
             <div className="relative">
               <input
                 id="street"
                 type="text"
                 value={street}
                 onChange={(e) => {
-                  const value = e.target.value;
-                  setStreet(value);
-                  if (value !== street) {
-                    setStreetSelected(false);
-                  }
+                  setStreet(e.target.value);
+                  setStreetSelected(false);
                   onFieldChange?.("street");
                 }}
                 placeholder="Musterstraße"
@@ -432,15 +443,6 @@ const AddressComponent: React.FC<AddressComponentProps> = ({
                     : "border-gray-300 focus:ring-indigo-500"
                 }`}
               />
-
-              {/*------------------ Error message for Street ------------------ */}
-              <span
-                className={`text-xs h-5 mt-1 ${
-                  errors.street ? "text-red-500" : "text-transparent"
-                }`}
-              >
-                {errors.street || "No error"}
-              </span>
 
               {streetSuggestions.length > 0 && (
                 <div className="absolute z-10 bg-white border border-gray-300 rounded-md shadow-lg mt-1 w-full max-h-60 overflow-auto">
@@ -466,10 +468,20 @@ const AddressComponent: React.FC<AddressComponentProps> = ({
           <div className="flex flex-col">
             <label
               htmlFor="houseNumber"
-              className="text-sm font-medium text-gray-700 mb-1"
+              className="text-lg font-medium text-gray-700 h-6"
             >
               House Number
             </label>
+
+            {/*------------------ Error message for House Number ------------------ */}
+            <span
+              className={`text-xs h-4 ${
+                errors.houseNumber ? "text-red-500" : "text-transparent"
+              }`}
+            >
+              {errors.houseNumber || "No error"}
+            </span>
+
             <input
               id="houseNumber"
               type="text"
@@ -486,15 +498,6 @@ const AddressComponent: React.FC<AddressComponentProps> = ({
                   : "border-gray-300 focus:ring-indigo-500"
               }`}
             />
-
-            {/*------------------ Error message for House Number ------------------ */}
-            <span
-              className={`text-xs h-5 mt-1 ${
-                errors.houseNumber ? "text-red-500" : "text-transparent"
-              }`}
-            >
-              {errors.houseNumber || "No error"}
-            </span>
           </div>
         </div>
       </div>

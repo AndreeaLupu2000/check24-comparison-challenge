@@ -3,18 +3,32 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 // Services
-import { createUser } from "../api/userService";
+import { createUser, getAllUsers } from "../api/userService";
 // Assets
 import Icon from "../assets/icon.png";
 import bcrypt from "bcryptjs";
 
-const SignupView = () => {
+interface SignupViewProps {
+  errors?: {
+    email?: string;
+    password?: string;
+  };
+
+  onFieldChange?: (field: "email" | "password") => void;
+}
+
+const SignupView: React.FC<SignupViewProps> = ({
+  onFieldChange,
+}) => {
   // Local state for the email and password
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // Local state for the error message
-  const [error, setError] = useState("");
+  // Local state for the form errors
+  const [formErrors, setFormErrors] = useState({
+    email: "",
+    password: "",
+  });
 
   // Navigation
   const navigate = useNavigate();
@@ -22,13 +36,32 @@ const SignupView = () => {
   // Handle the signup
   const handleSignup = async () => {
     // Check if the email and password are filled
-    if (!email || !password) {
-      setError("All fields are required");
+    if (!email) {
+      setFormErrors(prev => ({ ...prev, email: "Please enter the email" }));
       return;
     }
 
+    if (!password) {
+      setFormErrors(prev => ({ ...prev, password: "Please enter the password" }));
+      return;
+    }
+
+    // Check if email is valid
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setFormErrors(prev => ({ ...prev, email: "Invalid email format" }));
+      return;
+    }
+
+
     try {
       // Create the user
+      const user = await getAllUsers();
+
+      if (user.find((user) => user.email === email)) {
+        setFormErrors(prev => ({ ...prev, email: "User already exists" }));
+        return;
+      }
 
       const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -38,9 +71,11 @@ const SignupView = () => {
       navigate("/");
     } catch (err: unknown) {
       if (err instanceof Error) {
-        setError(err.message);
+        setFormErrors(prev => ({ ...prev, email: err.message }));
+        return;
       } else {
-        setError("Error creating account");
+        setFormErrors(prev => ({ ...prev, email: "Error creating account" }));
+        return;
       }
     }
   };
@@ -51,9 +86,9 @@ const SignupView = () => {
       <div className="fixed top-4 left-4 z-50">
         <button
           onClick={() => navigate("/")}
-          className="text-indigo-600 hover:underline text-sm bg-white px-3 py-1 rounded shadow"
+          className="text-blue-600 hover:underline text-md font-semibold bg-white px-3 py-1 rounded shadow"
         >
-          ← Back to Login
+          Back to Login
         </button>
       </div>
 
@@ -70,26 +105,39 @@ const SignupView = () => {
 
       {/* ------------------ Sign Up Card ------------------ */}
       <div className="bg-white p-6 rounded-md shadow-md mb-8">
-        <h1 className="text-xl font-bold mb-4 text-center">Sign Up</h1>
-
-        {error && (
-          <p className="text-red-500 text-sm mb-4 text-center">{error}</p>
-        )}
+        <h1 className="text-2xl font-bold mb-6 text-center">Sign Up</h1>
 
         {/* ------------------ Email Input ------------------ */}
         <div className="mb-6 relative">
           <label
             htmlFor="email"
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-lg font-medium text-gray-700 h-5"
           >
             Email
           </label>
+
+          {/* ------------------ Error message for Email ------------------ */}
+          <span
+            className={`text-xs h-4 ${formErrors.email ? "text-red-500" : "text-transparent"}`}
+          >
+            {formErrors.email || "No error"}
+          </span>
+
+          {/* ------------------ Input Field ------------------ */}
           <input
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setFormErrors(prev => ({ ...prev, email: "" }));
+              onFieldChange?.("email");
+            }}
             placeholder="Email"
-            className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-1 border-gray-300 focus:ring-indigo-500"
+            className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-1 ${
+              formErrors.email
+                ? "border-red-500 ring-red-500"
+                : "border-gray-300 focus:ring-indigo-500"
+            }`}
           />
         </div>
 
@@ -97,16 +145,33 @@ const SignupView = () => {
         <div className="mb-6 relative">
           <label
             htmlFor="password"
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-lg font-medium text-gray-700 h-5"
           >
             Password
           </label>
+
+          {/* ------------------ Error message for Password ------------------ */}
+          <span
+            className={`text-xs h-4 ${formErrors.password ? "text-red-500" : "text-transparent"}`}
+          >
+            {formErrors.password || "No error"}
+          </span>
+
+          {/* ------------------ Input Field ------------------ */}
           <input
             type="password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
-            className="w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-1 border-gray-300 focus:ring-indigo-500"
+            onChange={(e) => {
+              setPassword(e.target.value);
+              setFormErrors(prev => ({ ...prev, password: "" }));
+              onFieldChange?.("password");
+            }}
+            placeholder="********"
+            className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-1 ${
+              formErrors.password
+                ? "border-red-500 ring-red-500"
+                : "border-gray-300 focus:ring-indigo-500"
+            }`}
           />
         </div>
 
@@ -114,7 +179,7 @@ const SignupView = () => {
         <div className="flex justify-center">
           <button
             onClick={handleSignup}
-            className="bg-indigo-500 text-white px-4 py-2 rounded-md shadow-sm hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            className="bg-blue-500 text-white px-4 py-2 rounded-md shadow-sm hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
           >
             Create Account
           </button>

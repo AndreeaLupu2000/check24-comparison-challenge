@@ -108,8 +108,8 @@ const OfferCardDetailModal: React.FC<Props> = ({ offer, onClose }) => {
                         const value = rawValue ?? '';
                         let displayValue = value;
 
-                        if (value.toLowerCase() === 'true') displayValue = '✅';
-                        else if (value.toLowerCase() === 'false') displayValue = '❌';
+                        if (value.toLowerCase() === 'true' || value.toLowerCase() === '1' || value.toLowerCase() === 'ja' || value.toLowerCase() === 'yes') displayValue = '✅';
+                        else if (value.toLowerCase() === 'false' || value.toLowerCase() === '0' || value.toLowerCase() === 'nein' || value.toLowerCase() === 'no') displayValue = '❌';
 
                         return (
                         <li key={idx} className="text-gray-700">

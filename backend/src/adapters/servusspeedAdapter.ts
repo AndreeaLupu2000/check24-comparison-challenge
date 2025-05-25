@@ -116,7 +116,7 @@ export const ServusSpeedAdapter: ProviderAdapter = {
                 `TV: ${d.productInfo.tv}`,
                 `Max age: ${d.productInfo.maxAge}`,
                 `Limit from: ${d.productInfo.limitFrom}`,
-                `Discount: €${(d.discount / 100).toFixed(2)}`,
+                `Discount: ${(d.discount / 100).toFixed(2)} €`,
                 d.pricingDetails.installationService ? "Includes installation service" : "No installation"
               ].filter(Boolean).map(String)),
             } as Offer;

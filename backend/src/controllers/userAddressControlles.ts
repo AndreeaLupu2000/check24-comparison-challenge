@@ -40,7 +40,14 @@ export const createUserAddress = asyncHandler(async (req: Request, res: Response
         );
 
         // Return the created user address
-        res.status(201).json({ id: userAddressId, ...created });
+        res.status(201).json(
+            {
+                id: userAddressId,
+                userId: created.userId,
+                addressId: created.addressId,
+                createdAt: created.createdAt,
+            }
+        );
 
     } catch (error) {
         console.error("Appwrite error:", JSON.stringify(error, null, 2));

@@ -142,21 +142,35 @@ export const WebWunderAdapter: WebWunderExtendedAdapter = {
       const rawOffers =
         parsed?.["SOAP-ENV:Envelope"]?.["SOAP-ENV:Body"]?.["Output"]?.["ns2:products"] ?? [];
 
+
       // Normalize the offers to the common offer model
-      const normalized: Offer[] = rawOffers.map((o: any) => ({
-        provider: "WebWunder",
-        productId: o["ns2:productId"]?.toString() ?? "unknown",
-        title: o["ns2:providerName"] ?? "Unnamed Package",
-        speedMbps: o["ns2:productInfo"]?.["ns2:speed"] ?? "0",
-        pricePerMonth: (parseInt(o["ns2:productInfo"]?.["ns2:monthlyCostInCent"] ?? "0") / 100).toString(),
-        durationMonths: o["ns2:productInfo"]?.["ns2:contractDurationInMonths"] ?? "24",
-        connectionType: o["ns2:productInfo"]?.["ns2:connectionType"] ?? "DSL",
-        extras: JSON.stringify([
-          o["ns2:productInfo"]?.["ns2:voucher"]?.["ns2:percentage"]
-            ? `Voucher: ${o["ns2:productInfo"]["ns2:voucher"]["ns2:percentage"]}%`
-            : undefined
-        ].filter(Boolean).map(String)),
-      }));
+      const normalized: Offer[] = rawOffers
+        .map((o: any) => {
+          if (!o["ns2:productId"] ||
+              !o["ns2:providerName"] || 
+              !o["ns2:productInfo"]?.["ns2:speed"] || 
+              !o["ns2:productInfo"]?.["ns2:monthlyCostInCent"] || 
+              !o["ns2:productInfo"]?.["ns2:contractDurationInMonths"] || 
+              !o["ns2:productInfo"]?.["ns2:connectionType"] ||
+              !o["ns2:productInfo"]?.["ns2:voucher"]?.["ns2:percentage"]
+            ) {
+            return null;
+          } else {
+            return {
+              provider: "WebWunder",
+              productId: o["ns2:productId"]?.toString(),
+              title: o["ns2:providerName"],
+              speedMbps: o["ns2:productInfo"]?.["ns2:speed"],
+              pricePerMonth: (parseInt(o["ns2:productInfo"]?.["ns2:monthlyCostInCent"]) / 100).toString(),
+              durationMonths: o["ns2:productInfo"]?.["ns2:contractDurationInMonths"],
+              connectionType: o["ns2:productInfo"]?.["ns2:connectionType"],
+              extras: JSON.stringify([
+                  `Voucher: ${o["ns2:productInfo"]["ns2:voucher"]["ns2:percentage"]}%`
+                ].filter(Boolean).map(String)),
+            };
+          }
+        })
+        .filter((offer: Offer | null): offer is Offer => offer !== null);
 
       if (!options?.internalCall) {
         const additional = await getAllOfferVariants(address);

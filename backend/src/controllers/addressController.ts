@@ -57,7 +57,16 @@ export const createAddress = async (req: Request, res: Response) => {
     )
 
     // Return the created address
-    res.status(201).json({ id: addressId, ...created })
+    res.status(201).json(
+      {
+        id: addressId,
+        plz: created.plz,
+        city: created.city,
+        street: created.street,
+        houseNumber: created.houseNumber,
+        hash: created.hash,
+      }
+    )
   } catch (error) {
     console.error("[createOrGetAddress]", error)
     res.status(500).json({ error: "Internal server error" })

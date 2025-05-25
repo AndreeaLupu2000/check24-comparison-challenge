@@ -1,4 +1,3 @@
-
 import { ProviderAdapter } from "./providerAdapter";
 import { AddressInput } from "../models/AddressModel";
 import { Offer } from "../models/OfferModel";
@@ -46,22 +45,33 @@ export const VerbynDichAdapter: ProviderAdapter = {
         // Extract values from description using a basic regex
         const speedMatch = data.description.match(/(\d+)\s* Mbit/i);
         const priceMatch = data.description.match(/(\d+)[,.]?(\d{0,2})\s*€/);
-        const durationMatch = data.description.match(/(\d+)\s*months?/i);
+        const durationMatch = data.description.match(/(\d+)\s* Monate/i);
         const connectionTypeMatch = data.description.match(/\s*([A-Za-z]+)-Verbindung/);
+
+        // Check if any required field is missing, empty, or invalid
+        if (!speedMatch || 
+            !priceMatch || 
+            !durationMatch || 
+            !connectionTypeMatch ||
+            !data.product) {
+          continue;
+        }
 
         // normalize the offer to the common offer model and add it to the list of offers
         offers.push({
           provider: "VerbynDich",
           productId: `${page}`,
           title: data.product,
-          speedMbps: speedMatch ? speedMatch[1].toString() : "0",
-          pricePerMonth: priceMatch
-            ? `${priceMatch[1]}.${priceMatch[2] || "00"}`
-            : "0",
-          durationMonths: durationMatch ? durationMatch[1].toString() : "24",
-          connectionType: connectionTypeMatch ? connectionTypeMatch[1].toUpperCase() : "UNKNOWN",
-          extras: JSON.stringify([data.description].filter(Boolean).map(String)),
+          speedMbps: speedMatch[1].toString(),
+          pricePerMonth: priceMatch[1].toString(),
+          durationMonths: durationMatch[1].toString(),
+          connectionType: connectionTypeMatch[1].toUpperCase(),
+          extras: JSON.stringify([
+            `Description: ${data.description}`,
+          ].filter(Boolean).map(String)),
         });
+
+        console.log("description", data.description);
 
         if (data.last) {
           hasMore = false;

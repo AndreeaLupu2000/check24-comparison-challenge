@@ -63,23 +63,47 @@ export const ByteMeAdapter: ProviderAdapter = {
       });
 
       // Map the ByteMe raw offer to the general offer interface
-      const offers = parsed.data.map(row => ({
-        provider: "ByteMe",
-        productId: row.productId,
-        title: `${row.providerName.trim()} ${row.speed} Internet`,
-        speedMbps: row.speed || "0",
-        pricePerMonth: (parseInt(row.monthlyCostInCent) / 100).toString(),
-        durationMonths: row.durationInMonths || "24",
-        connectionType: row.connectionType,
-        extras: JSON.stringify([
-          `Limit: ${row.limitFrom}`,
-          `Max Age: ${row.maxAge}`,
-          `Voucher: ${row.voucherType} ${row.voucherValue}`,
-          `TV: ${row.tv}`,
-          `Installation Service: ${row.installationService}`,
-          `After 2 Years: ${row.afterTwoYearsMonthlyCost}`
-        ].filter(Boolean).map(String)),
-      }));
+      const offers = parsed.data.map(row => {
+        // Check for NaN values in numeric fields
+        const monthlyCost = parseInt(row.monthlyCostInCent);
+        const speed = parseInt(row.speed);
+        const duration = parseInt(row.durationInMonths);
+        const afterTwoYearsMonthlyCost = parseInt(row.afterTwoYearsMonthlyCost);
+        const voucherValue = parseInt(row.voucherValue);
+        
+        // Skip if any numeric value is NaN
+        if (isNaN(monthlyCost) ||
+            isNaN(speed) ||
+            isNaN(duration) ||
+            isNaN(afterTwoYearsMonthlyCost) ||
+            isNaN(voucherValue) ||
+            !duration ||
+            !speed ||
+            !monthlyCost ||
+            !afterTwoYearsMonthlyCost ||
+            !voucherValue) {
+          return null;
+        }
+
+        return {
+          provider: "ByteMe",
+          productId: row.productId,
+          title: `${row.providerName.trim()}`,
+          speedMbps: row.speed,
+          pricePerMonth: (monthlyCost / 100).toFixed(2).toString(),
+          durationMonths: row.durationInMonths,
+          connectionType: row.connectionType,
+          extras: JSON.stringify([
+            `Limit: ${row.limitFrom}`,
+            `Max Age: ${row.maxAge}`,
+            `Voucher Type: ${row.voucherType}`,
+            `Voucher Value: ${(voucherValue / 100).toFixed(2)} €`,
+            `TV: ${row.tv}`,
+            `Installation Service: ${row.installationService}`,
+            `After 2 Years: ${(afterTwoYearsMonthlyCost / 100).toFixed(2)} €  `
+          ].filter(Boolean).map(String)),
+        };
+      }).filter((offer: Offer | null): offer is Offer => offer !== null); // Remove null entries
 
       // Keep only unique offers
       const uniqueOffersMap = new Map<string, Offer>();

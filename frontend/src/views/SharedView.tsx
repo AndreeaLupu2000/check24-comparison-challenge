@@ -10,7 +10,7 @@ import { useAuth } from "../context/AuthContext";
 // Services
 import { streamOffers } from "../api/offerService";
 import { createSharedOffer, getSharedOffer } from "../api/shareService";
-import { createAddress } from "../api/addressService";
+import { createAddress, getAllAddresses } from "../api/addressService";
 import { createUserAddress } from "../api/userAddressService";
 // Components
 import OfferCard from "../components/OfferCard";
@@ -55,7 +55,6 @@ const SharedView = () => {
   const location = useLocation();
 
   // Local state for the offers reference
-  const offersRef = useRef<OfferDto[]>([]);
   const offerStringRef = useRef<string[]>([]);
 
   // Local state for the selected offer
@@ -151,13 +150,24 @@ const SharedView = () => {
         setAddress(parsed);
       }
     }
+
+    const navType = 
+      (performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming)?.type ?? "navigate";
+
+    if (navType === "reload") {
+      const storedOffers = localStorage.getItem("offers");
+      if (storedOffers) {
+        const parsedOffers = JSON.parse(storedOffers);
+        offerStringRef.current = parsedOffers;
+        setOffers(parsedOffers.map((o: string) => JSON.parse(o)));
+        setCanShare(true); // allow sharing restored offers
+      }
+      setLoading(false);
+    }
   }, []);
 
   // Handles incoming offers one at a time during streaming
   const handleNewOffer = (offer: OfferDto) => {
-    // Add the offer to the offers reference coming from the streamOffers function
-    offersRef.current.push(offer);
-
     // Add the offer to the offer string reference coming from the streamOffers function in the JSON format
     offerStringRef.current.push(JSON.stringify(offer));
 
@@ -281,6 +291,9 @@ const SharedView = () => {
 
   // Modified onSearch to handle both shared and regular views
   const onSearch = async () => {
+    // Clear Local Storage of the offers
+    localStorage.removeItem("offers");
+
     const newErrors: typeof addressErrors = {};
 
     // Validation checks remain the same
@@ -315,7 +328,6 @@ const SharedView = () => {
     }
 
     // Clear and reset offers
-    offersRef.current = [];
     offerStringRef.current = [];
     setOffers([]);
     setLoading(true);
@@ -340,6 +352,18 @@ const SharedView = () => {
           plz: address.plz,
           countryCode: address.countryCode || "DE",
         });
+
+      // If the address already exists, get the existing address ID
+      if (!savedAddress.id) {
+        const allAddresses = await getAllAddresses();
+
+        for (const a of allAddresses) {
+          if (a.street === address.street && a.houseNumber === address.houseNumber && a.city === address.city && a.plz === address.plz) {
+            savedAddress.id = a.id;
+            break;
+          }
+        }
+      }
 
         // Create the user-address relation in the UserAddress DB for better correlation
         await createUserAddress({
@@ -367,6 +391,9 @@ const SharedView = () => {
       console.warn("No user ID available for sharing");
       return;
     }
+
+    // Save the offers to the local storage
+    localStorage.setItem("offers", JSON.stringify(offerStringRef.current));
   };
 
   // Handles errors during the streaming process
@@ -401,6 +428,21 @@ const SharedView = () => {
   // ------------------------ JSX: Search View Layout ------------------------
   return (
     <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="fixed top-4 left-4 z-50">
+        <button
+          onClick={() => {
+            localStorage.removeItem("address");
+            localStorage.removeItem("user");
+            localStorage.removeItem("offers");
+            setOffers([]);
+            setFilteredOffers([]);
+            navigate("/");
+          }}
+          className="text-blue-600 hover:underline text-md font-semibold bg-white px-3 py-1 rounded shadow"
+        >
+          To Login
+        </button>
+      </div>
       <div className="w-full py-6 mb-8 mt-10">
         {/* ------------------ Logo and title ------------------ */}
         <div className="flex justify-center items-center gap-6 max-w-6xl mx-auto px-4">
