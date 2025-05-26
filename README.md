@@ -1,196 +1,160 @@
-# CHECK24 GenDev Internet Provider Comparison Challenge
+### CHECK24 GenDev Internet Provider Comparison Challenge
 
-**Note:** This is the challenge for the **7th round** of the [GenDev Scholarship](https://check24.de/gen-dev). We look forward to your application - happy coding! 🤓
+**Link to deployed version:** https://check24-comparison-challenge-frontend.onrender.com/
 
-## Table of Contents
+**Test Username:** test@gmail.com
 
-- [CHECK24 GenDev Internet Provider Comparison Challenge](#check24-gendev-internet-provider-comparison-challenge)
-  - [Table of Contents](#table-of-contents)
-  - [The Challenge 🤔](#the-challenge-)
-    - [Minimum Requirements](#minimum-requirements)
-    - [Optional Features](#optional-features)
-    - [Getting Started](#getting-started)
-  - [Providers 🛜](#providers-)
-    - [WebWunder](#webwunder)
-    - [ByteMe](#byteme)
-    - [Ping Perfect](#ping-perfect)
-    - [VerbynDich](#verbyndich)
-    - [Servus Speed](#servus-speed)
-  - [UI 💅](#ui-)
-  - [What We're Looking For 🧐](#what-were-looking-for-)
-  - [Submitting Your Project 🚀](#submitting-your-project-)
-  - [Questions? ❓](#questions-)
+**Test Password:** test
 
-## The Challenge 🤔
+**Live Demo:**
 
-Build an application that allows users to compare internet providers. 🌐 You will receive five different API endpoints from five different internet providers, but these APIs may be unreliable.
-Your goal is to ensure a smooth comparison experience despite potential API failures or slow responses, without negatively impacting the user experience or
-limiting product variety while still displaying only actual offers that the internet providers are able to conclude.
+## Project Structure
 
-### Minimum Requirements
+```
+check24-comparison-challenge
+├── README.md
+├── client
+│   ├── node_modules           Installed node modules (do not touch)
+│   └── src
+|       ├── api                Defines API calls to the backend
+│       ├── assets             Assets such as images & logos
+│       ├── components         Individual components for main views
+│       ├── context            Contexts for sharing global states
+│       ├── types              DataTransferObjects (DTOs) for server communication
+│       └── views              Login, Sign Up, Search and Shared View
+|
+|
+└── server
+    ├── node_modules           Installed node modules
+    └── src
+        ├── adapters           Special Processing of each of the provider
+        ├── config             Configuration files for database and authentication
+        ├── controllers        Implementation of controllers for user, user-address relation, sharables and a general offer model
+        ├── models             Data models & schemas
+        ├── routes             Individual routes for users, user-address relations, offers and shares
+        └── server.ts          Contains Express.js app and sockets
+```
 
-1. Robust handling of API failures or delays. //done
-2. Make sure to provide useful sorting and filtering options. //done
+
+## Minimum Requirements
+
+1. Robust handling of API failures or delays. 
+
+   - Centralized Error Handling
+   
+      - A custom error-handling middleware is used in the backend (server.ts) to manage unexpected failures.
+      - All routes and controllers follow a structured error format for easier client-side interpretation.
+
+   - Provider Isolation Using try-catch
+
+      - Every provider adapter (e.g., webwunderAdapter.ts, pingperfectAdapter.ts, etc.) uses try-catch blocks to:
+      - Prevent one provider's failure from affecting the others.
+      - Return empty or fallback results in case of API issues.
+      - Log meaningful error messages for debugging and monitoring.
+
+   - Aggregation with Promise.allSettled
+
+      - offerController.ts uses Promise.allSettled to query all five providers in parallel:
+      - This ensures partial results are always returned, even when one or more providers fail.
+      - Each result is evaluated for status === 'fulfilled' before being included in the response.
+      - Rejected promises are logged and do not block the full response.
+
+   - Retry Mechanism
+
+      - Retry failed requests with delay.
+      - Reduce the chance of transient network failures breaking the result.
+      - Example usage within adapters includes up to 3 retries with a static delay or backoff.
+
+   - Result Consistency
+
+      - All successful offers, even when some providers fail or timeout
+      - Implicit fallback for missing providers (empty array if not available).
+      - The backend avoids throwing global errors unless all providers fail (this could be enhanced).
+
+2. Make sure to provide useful sorting and filtering options. 
+
+   - Users can sort offers by:
+
+     - Price (lowest to highest and vice versa)
+     - Speed
+
+   - Advanced filtering options include:
+     
+     - Maximum price
+     - Minimum speed requirements
+     - Contract duration preferences
+     - Provider selection
+
 3. Your application should include a share link feature that allows users to share the results page with others via platforms like WhatsApp. Even if a provider is down, the share links should still direct users to the shared offers.
-4. Credentials of the provider APIs should NEVER be leaked to the user. // done
 
-### Optional Features
+   - The share button allows the user to share the listed offers on Whatsapp, also to persons that are not users of the application yet. 
+   - To enable the sharable link to be accessible also when the providers are down, a database for shares was created, and stores the shares offers in an array, every element being stored as a JSON.
+   - When the link is access initially, the offers are first retrieved from the database and displayed in the Share view
+   - When a third party receives a shared link, he can also searches for new offers, without an account.
 
-- Address autocompletion //done
-- Validation of customer Input //done
-- Session state to remember the user's last search // done
+4. Credentials of the provider APIs should NEVER be leaked to the user. 
 
-### Getting Started
+   - The credential configuration for the providers are done in the `\config`
+   - The API Keys are kept in the env files and never accessed directly in the code.
+   - In the deployed version they are stored in the Environment Variables and accessed from there.
+   - In the frontend, no API for the provider or the database is used. All the requests are sent to the backend and the backend handles everything
+   - The only request made in the frontend are for address validation and suggestion. As for the providers, the API key to Google Cloud is stored in the .env file
 
-You can register for the API access [here](https://register.gendev7.check24.fun/).
+## Optional Features
 
-## Providers 🛜
+1. Address autocompletion 
 
-### WebWunder
+   - Implemented using Google Cloud Geocoding API for accurate address suggestions
+   - Real-time address validation as users type
+   - Support for multiple address formats, it was implemented to work for addresses from Germany
 
-WebWunder provides a SOAP web service for internet offers. The service follows traditional SOAP protocols and requires XML-based request/response handling.
+2. Validation of customer Input
 
-**API Details**
+   - Comprehensive form validation for all user inputs
 
-- **WSDL URL**: <https://webwunder.gendev7.check24.fun/endpunkte/soap/ws/getInternetOffers.wsdl>
-- **Request Model**: `legacyGetInternetOffers` Element
-- **Response Model**: `output` XML element
-- To authenticate against the API, an `X-Api-Key` HTTP Header is needed
+      - Validation for sign up (for Email and Password)
+      - Validation for log in (for Email and Password)
+      - Correct email format
+      - Missing input fields (for Log in, Sign up and Search)
 
-**Example Request**
+   - Real-time feedback on input errors
+   - Address format validation using Google Maps API
+      - Differentiating between non-existing addresses and wrong combination for the input
+   - Input sanitization to prevent XSS attacks for Login and Sign up using `bycrypt`
 
-```xml
-<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
-                  xmlns:gs="http://webwunder.gendev7.check24.fun/offerservice">
-   <soapenv:Header/>
-   <soapenv:Body>
-      <gs:legacyGetInternetOffers>
-         <gs:input>
-            <gs:installation>true</gs:installation>
-            <gs:connectionEnum>DSL</gs:connectionEnum>
-            <gs:address>
-               <gs:street>Example Street</gs:street>
-               <gs:houseNumber>123</gs:houseNumber>
-               <gs:city>Berlin</gs:city>
-               <gs:plz>10115</gs:plz>
-               <gs:countryCode>DE</gs:countryCode>
-            </gs:address>
-         </gs:input>
-      </gs:legacyGetInternetOffers>
-   </soapenv:Body>
-</soapenv:Envelope>
+3. Session state to remember the user's last search
+   
+   - Persistent storage of user's last search parameters
+   - Automatic restoration of search results on page reload
+   - Caching of recent searches for quick access
+   - Option to save favorite searches
+   - Cross-device synchronization of search history for logged-in users
 
-```
+## User Story
 
-### ByteMe
+- The user opens the app
+- If it has an account, it logs in into the app with his email and password
+- If it doesn't have an account, it can creates one using the Sign Up button, then it logs in.
+- The user arrives at the main view, the search view.
+- It enter the PLZ first, so that cities and PLZ are suggested while he is typing.
+- Based on these, when the user starts typing the street, a dropdown will suggest, streets matching the typed input.
+- After completing also the house number, the user presses start.
+- As soon as the offers arrive, they are displayed in the UI.
+- The share button is activated once all the offers are loaded.
+- The user can scroll and see the available offers.
+- He can also press on each offer to see more details about it.
+- For sharing the offers, the user needs to press the Share button.
+- The WhatsApp redirection page is opened.
+- If the user has the app installed it directly open the app and allows the user to search, who wants to share the link with.
 
-This provider outputs its offers in this CSV format:
-`productId,providerName,speed,monthlyCostInCent,afterTwoYearsMonthlyCost,durationInMonths,connectionType,installationService,tv,limitFrom,maxAge,voucherType,voucherValue`
+## Local Testing
 
-They recently informed about some issue with their API, where the same offers are sent out multiple times.
+1. Clone the repository
+2. Contact me at (alupu4884@gmail.com or andreea.lupu@tum.de) for receiving the Google Cloud API keys and the Appwrite keys. ( I will try to add them also on the application page for the challenge.)
+3. Go to backend and run `npm i` in the root of the backend folder in the Terminal.
+4. Create an `.env`file in the root of the backend folder.
+5. In the root of the backend folder run `npm run start-local` to start locally the application
+6. Go to frontend and run `npm i` in the root of the frontend folder in the Terminal.
+7. Create an `.env`file in the root of the frontend folder.
+8. In the root of the frontend folder run `npm run start-local` to start locally the application.
 
-Authentication is done via the `X-Api-Key` header.
-
-Their API can be reached under <https://byteme.gendev7.check24.fun/app/api/products/data>
-
-The API endpoint takes the following string query params:
-
-- street
-- houseNumber
-- city
-- plz
-
-### Ping Perfect
-
-Ping Perfect's OpenAPI spec can be found [here](https://register.gendev7.check24.fun/openapi-pingperfect.json)
-The Request body must be signed using a super secure custom signing method.
-
-**Steps for Signature Calculation**
-
-1. **Generate a Timestamp**
-   - The current Unix epoch timestamp (in seconds) is used to ensure freshness.
-
-2. **Prepare the Data to Sign**
-   - The request body (JSON payload) is converted to a string.
-   - Get the current time as UNIX timestamp in seconds.
-   - Concatenate the timestamp and the request body string with `:` as a separator.
-
-3. **Compute the HMAC-SHA256 Signature**
-   - Use the `HMAC-SHA256` algorithm.
-   - The `signatureSecret` (a shared secret key) is used as the HMAC key.
-   - The resulting hash is converted to a hexadecimal string.
-
-4. **Attach the Signature to the Request Headers**
-
-- The calculated signature is added as `X-Signature` in the HTTP request headers.
-- The timestamp is also included as `X-Timestamp` for verification.
-- The `X-Client-Id` identifies the client making the request.
-
-### VerbynDich
-
-Sadly VerbynDich doesn't provide a proper API.
-It's reachable at `https://verbyndich.gendev7.check24.fun/`.
-The endpoint is at `/check24/data`.
-The authentication is done via the `apiKey` query parameter.
-The request body is a simple string with the address in the following format:
-`street;house number;city;plz` with no newlines or whitespaces.
-Also an optional parameter with the `page` is given. The page is an integer starting from 0.
-The response is a JSON response with the following format:
-
-```json
-{
-    "product": "string",
-    "description": "string",
-    "last": "boolean whether this is the last offer",
-    "valid": "boolean whether it's a valid offer"
-}
-```
-
-You will need to extract the necessary information from the description field.
-Try multiple different addresses to get a good overview of the available offers and descriptions.
-
-### Servus Speed
-
-Servus Speed provides a RESTful API for internet offers. The auth is done via basic auth.
-The OpenAPI spec can be found [here](https://register.gendev7.check24.fun/openapi-servus-speed.json).
-Use the `/api/external/available-products` endpoint to get the available products.
-After that you can use the `/api/external/product-details/{productId}` endpoint to get the details of a specific product.
-Currently only the country code `DE` is supported. The discount is a fixed discount in Cent.
-
-## UI 💅
-
-The application should have a graphical user interface. It can be a web, mobile, or desktop application. The technology is up to you, but it should be simple and intuitive to use.
-You can check out our [Internet Provider Comparison](https://www.check24.de/internet/) for some inspiration on what the UI could look like.
-
-## What We're Looking For 🧐
-
-- **Code Quality:** Clean, maintainable, and well-documented code
-- **Performance:** Fast and responsive application, efficient algorithms
-- **User Experience:** Fast and seamless comparison results regardless of API failures
-- **Creativity:** Additional features or smart solutions
-- **Documentation:** A clear README explaining your approach
-- **Deployment**: If you are building a web application, it should be hosted and accessible
-- **Architecture:** A well-thought-out architecture that is scalable and maintainable
-
-If you are building a mobile app, you don’t have to publish it to the Play Store or App Store, but it should be easy to run in Android Studio/Xcode, and your backend should be hosted.
-
-The deployment does not have to be anything fancy - as long as we can enter a URL in a browser and access your project, it’s sufficient.
-
-## Submitting Your Project 🚀
-
-Create a private GitHub repository and upload your code. Grant read access to [gendev@check24.de](mailto:gendev@check24.de).
-When submitting your application, include the repository link.
-
-**Your submission should include:**
-
-- Your working code (backend and frontend/mobile app)
-- A README.md explaining your approach
-- A demo of the project:
-  - If it’s a web app, a link to a hosted version
-  - If it’s a mobile app, it should be runnable locally, with the app connecting to a hosted backend
-
-Good luck and have fun coding! 😎
-
-## Questions? ❓
-
-If you have any questions, contact [gendev@check24.de](mailto:gendev@check24.de).
