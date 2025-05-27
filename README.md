@@ -1,5 +1,6 @@
 ### CHECK24 GenDev Internet Provider Comparison Challenge
 
+
 **Link to deployed version:** https://check24-comparison-challenge-frontend.onrender.com/
 
 **Test Username:** test@gmail.com
@@ -29,7 +30,7 @@ check24-comparison-challenge
     └── src
         ├── adapters           Special Processing of each of the provider
         ├── config             Configuration files for database and authentication
-        ├── controllers        Implementation of controllers for user, user-address relation, sharables and a general offer model
+        ├── controllers        Implementation of controllers for user, user-address relation, shares and a general offer model
         ├── models             Data models & schemas
         ├── routes             Individual routes for users, user-address relations, offers and shares
         └── server.ts          Contains Express.js app and sockets
@@ -38,7 +39,7 @@ check24-comparison-challenge
 
 ## Minimum Requirements
 
-1. Robust handling of API failures or delays. 
+1. Robust API Failure Handling
 
    - Centralized Error Handling
    
@@ -47,17 +48,27 @@ check24-comparison-challenge
 
    - Provider Isolation Using try-catch
 
-      - Every provider adapter (e.g., webwunderAdapter.ts, pingperfectAdapter.ts, etc.) uses try-catch blocks to:
-      - Prevent one provider's failure from affecting the others.
-      - Return empty or fallback results in case of API issues.
-      - Log meaningful error messages for debugging and monitoring.
+      - Every provider adapter (e.g., webwunderAdapter.ts, pingperfectAdapter.ts, etc.) uses try-catch blocks to: 
+         - Prevent one provider's failure from affecting the others.
+         - Return empty or fallback results in case of API issues.
+
+   - SSE-Based Streaming Mechanism
+
+      - A  dedicated route `/offers/stream` in offerController.ts handles streaming.
+      - Upon receiving a valid address query, the server opens an SSE connection and starts fetching offers from all five providers in parallel.
+      - Each offer is streamed to the frontend immediately upon availability using `res.write()` with SSE formatting.
+      - The React frontend uses the EventSource API to listen to the stream.
+      - Offers are rendered progressively, meaning users see available options without having to wait for all providers to respond.
+      - Loading indicators, `isStreaming`, and error states are updated in real time.
+      - Late-arriving offers are appended seamlessly.
+      - The UI remains responsive and informative even when one or more providers fail.
 
    - Aggregation with Promise.allSettled
 
       - offerController.ts uses Promise.allSettled to query all five providers in parallel:
       - This ensures partial results are always returned, even when one or more providers fail.
-      - Each result is evaluated for status === 'fulfilled' before being included in the response.
-      - Rejected promises are logged and do not block the full response.
+      - Each result is evaluated for `status === 'fulfilled'` before being included in the response.
+      - Rejected promises do not block the full response.
 
    - Retry Mechanism
 
@@ -71,44 +82,45 @@ check24-comparison-challenge
       - Implicit fallback for missing providers (empty array if not available).
       - The backend avoids throwing global errors unless all providers fail (this could be enhanced).
 
-2. Make sure to provide useful sorting and filtering options. 
+2. Sorting & Filtering Options 
 
    - Users can sort offers by:
 
-     - Price (lowest to highest and vice versa)
-     - Speed
+     - Price (ascending/descending)
+     - Speed (ascending/descending)
 
    - Advanced filtering options include:
      
      - Maximum price
-     - Minimum speed requirements
-     - Contract duration preferences
-     - Provider selection
+     - Minimum speed
+     - Contract duration
+     - Specific provider
 
-3. Your application should include a share link feature that allows users to share the results page with others via platforms like WhatsApp. Even if a provider is down, the share links should still direct users to the shared offers.
+3. Share Link 
 
    - The share button allows the user to share the listed offers on Whatsapp, also to persons that are not users of the application yet. 
    - To enable the sharable link to be accessible also when the providers are down, a database for shares was created, and stores the shares offers in an array, every element being stored as a JSON.
-   - When the link is access initially, the offers are first retrieved from the database and displayed in the Share view
+   - When the link is access initially, the offers are first retrieved from the database and displayed in the Share view.
    - When a third party receives a shared link, he can also searches for new offers, without an account.
 
-4. Credentials of the provider APIs should NEVER be leaked to the user. 
+4. Secure Handling of Provider Credentials and API Keys
 
-   - The credential configuration for the providers are done in the `\config`
+   - The backend credential configuration for the providers are done in the `\config`
    - The API Keys are kept in the env files and never accessed directly in the code.
    - In the deployed version they are stored in the Environment Variables and accessed from there.
    - In the frontend, no API for the provider or the database is used. All the requests are sent to the backend and the backend handles everything
-   - The only request made in the frontend are for address validation and suggestion. As for the providers, the API key to Google Cloud is stored in the .env file
+   - The only request made in the frontend are for address validation and suggestion. As for the providers, the API key to Google Cloud is stored in the `.env` file
 
 ## Optional Features
 
-1. Address autocompletion 
+1. Address autocompletion
 
    - Implemented using Google Cloud Geocoding API for accurate address suggestions
-   - Real-time address validation as users type
-   - Support for multiple address formats, it was implemented to work for addresses from Germany
+   - Real-time address suggestion as users type
+   - It was implemented to work for addresses from Germany
+   - Overpass API is being used to fetch street names for a given postal code area in Germany.
 
-2. Validation of customer Input
+2. User Input Validation
 
    - Comprehensive form validation for all user inputs
 
@@ -120,17 +132,23 @@ check24-comparison-challenge
    - Real-time feedback on input errors
    - Address format validation using Google Maps API
       - Differentiating between non-existing addresses and wrong combination for the input
-   - Input sanitization to prevent XSS attacks for Login and Sign up using `bycrypt`
+   - Password encryption for Login and Sign up using `bycrypt`
 
-3. Session state to remember the user's last search
-   
+3. Session Persistence
+
+   - Is a plus feature for users that have an account
+   - Stores the searched address of each user in a database
    - Persistent storage of user's last search parameters
    - Automatic restoration of search results on page reload
    - Caching of recent searches for quick access
-   - Option to save favorite searches
-   - Cross-device synchronization of search history for logged-in users
 
-## User Story
+## Deployment 
+
+- The backend and frontend are deployed separately.
+- Render has been used, the free tier.
+- Sometime it takes a moment to start the server.
+
+## User Story Map
 
 - The user opens the app
 - If it has an account, it logs in into the app with his email and password
@@ -152,9 +170,9 @@ check24-comparison-challenge
 1. Clone the repository
 2. Contact me at (alupu4884@gmail.com or andreea.lupu@tum.de) for receiving the Google Cloud API keys and the Appwrite keys. ( I will try to add them also on the application page for the challenge.)
 3. Go to backend and run `npm i` in the root of the backend folder in the Terminal.
-4. Create an `.env`file in the root of the backend folder.
-5. In the root of the backend folder run `npm run start-local` to start locally the application
+4. Create an `.env` file in the root of the backend folder and paste the received content for backend environment variables.
+5. In the root of the backend folder run `npm run start-local` to start locally the application.
 6. Go to frontend and run `npm i` in the root of the frontend folder in the Terminal.
-7. Create an `.env`file in the root of the frontend folder.
-8. In the root of the frontend folder run `npm run start-local` to start locally the application.
+7. Create an `.env` file in the root of the frontend folder  and paste the received content for frontend environment variables.
+8. In the root of the frontend folder run `npm run dev` to start locally the application.
 
