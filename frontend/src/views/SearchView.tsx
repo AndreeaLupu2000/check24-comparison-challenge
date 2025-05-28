@@ -136,7 +136,7 @@ const SearchView = () => {
     try {
       // Determine which offers to share based on shareMode
       const offersToShare = mode === 'all' 
-        ? offerStringRef.current 
+        ? offerStringRef.current
         : displayOffers.map(offer => JSON.stringify(offer));
 
 
@@ -542,7 +542,7 @@ const SearchView = () => {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        createSharedLink('all');
+                        createSharedLink('filtered');
                         setShowShareDropdown(false);
                       }}
                       className="w-full text-left block px-4 py-2 hover:bg-gray-100 rounded-md"
@@ -557,7 +557,7 @@ const SearchView = () => {
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          createSharedLink('filtered');
+                          createSharedLink('all');
                           setShowShareDropdown(false);
                         }}
                         className="w-full text-left block px-4 py-2 hover:bg-gray-100 rounded-md"

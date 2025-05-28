@@ -604,7 +604,7 @@ const SharedView = () => {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        createSharedLink('all');
+                        createSharedLink('filtered');
                         setShowShareDropdown(false);
                       }}
                       className="w-full text-left block px-4 py-2 hover:bg-gray-100 rounded-md"
@@ -619,7 +619,7 @@ const SharedView = () => {
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          createSharedLink('filtered');
+                          createSharedLink('all');
                           setShowShareDropdown(false);
                         }}
                         className="w-full text-left block px-4 py-2 hover:bg-gray-100 rounded-md"
