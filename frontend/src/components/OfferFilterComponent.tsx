@@ -53,6 +53,16 @@ const OfferFilter: React.FC<OfferFilterProps> = ({ offers, onFilter }) => {
   const [durationMax, setDurationMax] = useState<number>(durationRange.max);
   const [filteredCount, setFilteredCount] = useState<number>(offers.length);
 
+  // Reset all filters to their initial values
+  const handleReset = () => {
+    setProvider("");
+    setSpeedMin(speedRange.min);
+    setSpeedMax(speedRange.max);
+    setPriceMin(priceRange.min);
+    setPriceMax(priceRange.max);
+    setDurationMin(durationRange.min);
+    setDurationMax(durationRange.max);
+  };
 
   // Update slider values when offers change
   useEffect(() => {
@@ -251,10 +261,18 @@ const OfferFilter: React.FC<OfferFilterProps> = ({ offers, onFilter }) => {
 
       </div>
       {filteredCount === 0 && (
-  <div className="mt-4 text-sm text-red-600">
-    No offers match your selected filters.
-  </div>
-)}
+        <div className="mt-4 text-sm text-red-600">
+          No offers match your selected filters.
+        </div>
+      )}
+      <div className="mt-4 flex justify-end">
+        <button
+          onClick={handleReset}
+          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors text-sm font-medium"
+        >
+          Reset Filters
+        </button>
+      </div>
     </div>
   );
 };
