@@ -72,8 +72,6 @@ const SearchView = () => {
     houseNumber?: string;
   }>({});
 
-  // Add this state to track what offers to share
-  const [shareMode, setShareMode] = useState<'all' | 'filtered'>('all');
 
   // Add this state to control dropdown visibility
   const [showShareDropdown, setShowShareDropdown] = useState(false);
@@ -134,10 +132,10 @@ const SearchView = () => {
   };
 
   // Share offers by saving them and generating a WhatsApp share link
-  const createSharedLink = async () => {
+  const createSharedLink = async (mode: 'all' | 'filtered') => {
     try {
       // Determine which offers to share based on shareMode
-      const offersToShare = shareMode === 'all' 
+      const offersToShare = mode === 'all' 
         ? offerStringRef.current 
         : displayOffers.map(offer => JSON.stringify(offer));
 
@@ -544,8 +542,7 @@ const SearchView = () => {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        setShareMode('all');
-                        createSharedLink();
+                        createSharedLink('all');
                         setShowShareDropdown(false);
                       }}
                       className="w-full text-left block px-4 py-2 hover:bg-gray-100 rounded-md"
@@ -560,8 +557,7 @@ const SearchView = () => {
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          setShareMode('filtered');
-                          createSharedLink();
+                          createSharedLink('filtered');
                           setShowShareDropdown(false);
                         }}
                         className="w-full text-left block px-4 py-2 hover:bg-gray-100 rounded-md"
