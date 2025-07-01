@@ -142,6 +142,9 @@ export const WebWunderAdapter: WebWunderExtendedAdapter = {
       const rawOffers =
         parsed?.["SOAP-ENV:Envelope"]?.["SOAP-ENV:Body"]?.["Output"]?.["ns2:products"] ?? [];
 
+      if (rawOffers.length === 0 || Array.isArray(rawOffers)) {
+        return [];
+      }
 
       // Normalize the offers to the common offer model
       const normalized: Offer[] = rawOffers

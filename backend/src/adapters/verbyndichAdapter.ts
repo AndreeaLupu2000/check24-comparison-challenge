@@ -18,9 +18,9 @@ export const VerbynDichAdapter: ProviderAdapter = {
     let hasMore = true;
     const offers: Offer[] = [];
 
-    try {
-      // Loop until there are no more offers
-      while (hasMore) {
+    // Loop until there are no more offers
+    while (hasMore) {
+      try {
         // Send the request to the API to get the offers
         const response = await axios.post(
           config.VERBYNDICH_BASE_URL,
@@ -49,11 +49,11 @@ export const VerbynDichAdapter: ProviderAdapter = {
         const connectionTypeMatch = data.description.match(/\s*([A-Za-z]+)-Verbindung/);
 
         // Check if any required field is missing, empty, or invalid
-        if (!speedMatch || 
-            !priceMatch || 
-            !durationMatch || 
-            !connectionTypeMatch ||
-            !data.product) {
+        if (!speedMatch ||
+          !priceMatch ||
+          !durationMatch ||
+          !connectionTypeMatch ||
+          !data.product) {
           continue;
         }
 
@@ -77,12 +77,17 @@ export const VerbynDichAdapter: ProviderAdapter = {
         } else {
           page += 1;
         }
+      } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.status === 429) {
+        console.warn(`[Verbyndich Adapter] Rate limited on page ${page}, stopping early.`);
+        break; // Exit gracefully but return what we have
       }
 
-      return offers;
-    } catch (err) {
-      console.error("[VerbynDich Adapter] Error:", err);
-      return [];
+      console.error(`[Verbyndich Adapter] Unexpected error on page ${page}:`, err);
+      break; // Optional: or continue;
     }
   }
+  return offers;
+},
 };
+
