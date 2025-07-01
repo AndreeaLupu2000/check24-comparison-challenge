@@ -71,7 +71,6 @@ export const VerbynDichAdapter: ProviderAdapter = {
           ].filter(Boolean).map(String)),
         });
 
-        console.log("description", data.description);
 
         if (data.last) {
           hasMore = false;

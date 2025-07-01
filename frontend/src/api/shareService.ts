@@ -27,36 +27,6 @@ export const getSharedOffer = async (id: string): Promise<ShareDto> => {
     return response.data;
 }
 
-/**
- * Update a shared offer
- * @param id - The ID of the share to update
- * @param share - The share to update
- * @returns The updated share
- */
-export const updateSharedOffer = async (id: string, share: ShareDto): Promise<ShareDto> => {
-    const response = await axios.put(`${API}/${id}`, share);
-    return response.data;
-}
-
-/**
- * Delete a shared offer
- * @param id - The ID of the share to delete
- * @returns The deleted share
- */
-export const deleteSharedOffer = async (id: string): Promise<ShareDto> => {
-    const response = await axios.delete(`${API}/${id}`);
-    return response.data;
-}
-
-/**
- * Get all shared offers
- * @returns An array of shares
- */
-export const getAllSharedOffers = async (): Promise<ShareDto[]> => {
-    const response = await axios.get(API);
-    return response.data;
-}
-
 
 
 

@@ -17,14 +17,6 @@ export const createUserAddress = async (userAddress: UserAddressInputDto) => {
   return response.data;
 };
 
-/**
- * Get all user addresses
- * @returns An array of user addresses
- */
-export const getUserAddresses = async (): Promise<UserAddressInputDto[]> => {
-  const response = await axios.get(API_URL);
-  return response.data;
-};
 
 /**
  * Get the last used address by user ID

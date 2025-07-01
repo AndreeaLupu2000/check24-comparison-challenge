@@ -97,36 +97,3 @@ export const getAllUsers = asyncHandler(async (req: Request, res: Response) => {
     res.status(500).json({ error: "Internal server error" });
   }
 })
-
-/**
- * Get a user by id
- * @param req 
- * @param res 
- * @returns 
- */
-export const getUserByID = asyncHandler(async (req: Request, res: Response) => {
-  // Get the id from the request params
-  const { id } = req.params;
-
-  // Check if the id is present and is a string
-  if (!id || typeof id !== "string") {
-    res.status(400).json({ error: "User ID is required" });
-    return;
-  }
-
-  try {
-    // Get the user from the database
-    const user = await databases.getDocument(
-      DB_ID,
-      USER_COLLECTION_ID,
-      id
-    );
-
-    // Return the user
-    res.status(200).json(user);
-
-  } catch (error: any) {
-    console.error("[getUserById]", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-})

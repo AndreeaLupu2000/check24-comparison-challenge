@@ -56,52 +56,6 @@ export const createUserAddress = asyncHandler(async (req: Request, res: Response
 });
 
 
-export const getUserAddressesByUserId = asyncHandler(async (req: Request, res: Response) => {
-    // Get the userId from the request params
-    const { userId } = req.params;
-
-    try {
-        // Get the user addresses from the database
-        const userAddresses = await databases.listDocuments(
-            DB_ID,
-            USER_ADDRESS_COLLECTION_ID,
-            [
-                Query.equal("userId", userId)
-            ]
-        );
-
-        // Return the user addresses
-        res.status(200).json(userAddresses.documents);
-
-    } catch (error) {
-        console.error("Appwrite error:", JSON.stringify(error, null, 2));
-        res.status(500).json({ message: "Failed to get user addresses", error });
-    }
-});
-
-export const getUserAddressesByAddressId = asyncHandler(async (req: Request, res: Response) => {
-    // Get the addressId from the request params
-    const { addressId } = req.params;
-
-    try {
-        // Get the user addresses from the database
-        const userAddresses = await databases.listDocuments(
-            DB_ID,
-            USER_ADDRESS_COLLECTION_ID,
-            [
-                Query.equal("addressId", addressId)
-            ]
-        );
-
-        // Return the user addresses
-        res.status(200).json(userAddresses.documents);
-
-    } catch (error) {
-        console.error("Appwrite error:", JSON.stringify(error, null, 2));
-        res.status(500).json({ message: "Failed to get user addresses", error });
-    }
-});
-
 export const getAllUserAddresses = asyncHandler(async (req: Request, res: Response) => {
     try {
         // Get all user addresses from the database
